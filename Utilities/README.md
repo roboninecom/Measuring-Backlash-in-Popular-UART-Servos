@@ -14,3 +14,6 @@ pip install pandas numpy plotly
 ## Usage
 - Run the analyzers with `python log_calc.py <path/to/motor_telemetry.csv>` or `python log_calc_single.py ...`.
 - Launch the visualizers with `python log_viz.py <csv>` or `python log_viz_single.py <csv>`; an interactive Plotly window will open.
+
+## Utilities
+- Python helpers for parsing/visualizing telemetry live in `Utilities/`; see `Utilities/README.md` for virtualenv activation plus dependency install commands before running the calculators or Plotly viewers.
