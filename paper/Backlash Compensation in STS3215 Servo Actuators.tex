@@ -244,16 +244,24 @@ At a radius of \SI{100}{\milli\meter}, the corresponding linear displacement per
 
 \subsection{Backlash Measurement Procedure}
 
-During each test, the motion sequence described above is executed while motor telemetry is sampled at approximately \SI{10}{\hertz}. For each cycle, two reference conditions are extracted:
+As part of each test, a sequence of motions is executed according to the force application sequence described above. During this sequence, motor telemetry (including each servo current position and target position) is sampled at approximately \SI{10}{\hertz} rate. For each cycle, two reference conditions are extracted:
 \begin{itemize}
-    \item \textbf{Loaded reference:} the encoder position while the pull motors apply the nominal \SI{0.3}{\kilo\gram force} to the lever in one direction.
-    \item \textbf{Unloaded reference:} the encoder position immediately after both pull motors have relaxed and no external force is applied to the main lever.
+    \item \textbf{Loaded reference:} the actual encoder position while the pull motors apply a nominal \SI{0.3}{\kilo\gram force} to the lever in one direction.
+    \item \textbf{Unloaded reference:} the actual encoder position immediately after both pull motors have relaxed and no external force is applied to the main lever.
 \end{itemize}
 
-For each pull direction (CW and CCW), two reference points are extracted:
+For each pull direction (CW and CCW), two reference points are extracted from the telemetry stream:
 \begin{itemize}
-    \item \textbf{Unloaded (relaxed) state:} $p_{\mathrm{cw,unloaded}}$ and $p_{\mathrm{ccw,unloaded}}$,
-    \item \textbf{Loaded (stretched) state:} $p_{\mathrm{cw,loaded}}$ and $p_{\mathrm{ccw,loaded}}$.
+    \item \textbf{Unloaded (relaxed) state:} the actual encoder position immediately after both pull motors release tension.
+    \item \textbf{Loaded (stretched) state:} the actual encoder position while the approximately \SI{0.3}{\kilo\gram force} is applied in that direction.
+\end{itemize}
+
+For each of these states, multiple samples are collected over the repeated motion cycles. The samples are averaged to obtain stable estimates of:
+\begin{itemize}
+    \item $p_{\mathrm{cw,unloaded}}$
+    \item $p_{\mathrm{ccw,unloaded}}$
+    \item $p_{\mathrm{cw,loaded}}$
+    \item $p_{\mathrm{ccw,loaded}}$
 \end{itemize}
 
 The total positional deviation between the two pull directions is then computed separately for the unloaded and loaded conditions:
@@ -261,7 +269,8 @@ The total positional deviation between the two pull directions is then computed 
 d_{\mathrm{unloaded}} &= \bigl| p_{\mathrm{cw,unloaded}} - p_{\mathrm{ccw,unloaded}} \bigr|, \\
 d_{\mathrm{loaded}} &= \bigl| p_{\mathrm{cw,loaded}} - p_{\mathrm{ccw,loaded}} \bigr|.
 \end{align}
-These two values represent the measured backlash in the absence of external force and under the applied counter-torque, respectively. Repeating the motion sequence multiple times yields sufficient samples to compute average backlash and its dispersion for each configuration (single motor, dual motor, dual motor with preload).
+
+These two values represent the measured backlash in the absence of external force and under the applied counter-torque, respectively. Since the motion sequence is repeated multiple times, a sufficient number of samples is collected to compute the average backlash and its dispersion for each configuration (single motor, dual motor, dual motor with preload).
 
 \subsection{Single STS3215 Servo with Default Settings}
 
