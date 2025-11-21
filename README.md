@@ -22,6 +22,9 @@ The project demonstrates a practical method to eliminate mechanical backlash in 
 
 ## 🛠 Hardware Requirements
 
+![Test Stand Setup](paper/media/fig3_teststand.png)
+*Figure: Mechanical test stand used for backlash measurements.*
+
 To reproduce the experiments, you will need:
 *   **Servos:** 2x Feetech STS3215 (configured in dual-mode) + additional servos for load testing.
 *   **Controller:** USB-TTL Adapter (e.g., Feetech URT-1) connected to a PC.
