@@ -1,0 +1,678 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\sisetup{per-mode=symbol}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{caption}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{purple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% HardwareX formatting
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\title{Dual-Motor Backlash Compensation System for STS3215 Servo Actuators}
+\author{Boris Kotov\textsuperscript{*}\\
+Robonine\\
+\texttt{boris.k@robonine.com}\\
+\url{https://robonine.com}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This hardware article presents an open-source dual-motor backlash compensation system for Feetech STS3215 servo actuators. The system couples two servos in a back-to-back configuration with controlled pretension, reducing effective output backlash from \SI{1.30}{\degree} to approximately \SI{0.09}{\degree}---approaching encoder resolution limits. All mechanical designs (3D-printable brackets, mounting plates), control software, and test stand components are released under open-source licenses. The total hardware cost is approximately \$45--60 USD for the compensation unit, making it suitable for educational robotics, research prototyping, and precision motion control applications where commercial anti-backlash actuators are cost-prohibitive. Validation testing demonstrates consistent backlash reduction across multiple test cycles with no thermal issues during continuous operation.
+\end{abstract}
+
+\noindent\textbf{Keywords:} open-source hardware; servo actuators; backlash compensation; dual motor drive; robotics; low-cost motion control
+
+%==============================================================================
+\section*{Specifications Table}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Hardware name} & Dual-Motor Backlash Compensation System for STS3215 \\
+\midrule
+\textbf{Subject area} & 
+\begin{minipage}[t]{10cm}
+\begin{itemize}
+    \item[$\bullet$] Engineering and material science
+    \item[$\bullet$] Educational tools and open source alternatives to existing infrastructure
+\end{itemize}
+\end{minipage} \\
+\midrule
+\textbf{Hardware type} & 
+\begin{minipage}[t]{10cm}
+\begin{itemize}
+    \item[$\bullet$] Mechanical engineering and materials science
+    \item[$\bullet$] Electrical engineering and computer science
+\end{itemize}
+\end{minipage} \\
+\midrule
+\textbf{Closest commercial analog} & \begin{minipage}[t]{10cm}Harmonic drive actuators with anti-backlash mechanisms (e.g., Dynamixel Pro series, \$300--800+); strain-wave gearboxes (\$500+). No direct low-cost commercial analog exists for hobby servo backlash compensation.\end{minipage} \\
+\midrule
+\textbf{Open source license} & 
+\begin{minipage}[t]{10cm}
+Hardware: CERN Open Hardware Licence Version 2 -- Permissive (CERN-OHL-P-2.0)\\
+Software: MIT License\\
+Documentation: CC BY 4.0
+\end{minipage} \\
+\midrule
+\textbf{Cost of hardware} & Approximately \$45--60 USD (excluding test stand) \\
+\midrule
+\textbf{Source file repository} & \begin{minipage}[t]{10cm}DOI: [To be assigned upon Zenodo upload]\\
+Zenodo: \url{https://zenodo.org/record/XXXXXXX}\\
+(GitHub mirror: \url{https://github.com/roboninecom/Backlash-Compensation-in-STS3215-Servo-Actuators})\end{minipage} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Hardware in Context}
+%==============================================================================
+
+\subsection{Motivation and Scientific Application}
+
+Mechanical backlash---the angular free play caused by clearances in gear trains---is a fundamental limitation in low-cost servo actuators. The Feetech STS3215 servo, widely used in educational robotics, DIY robotic arms, and research prototypes, exhibits approximately \SI{0.8}{\degree}--\SI{1.3}{\degree} of backlash. This corresponds to roughly \SI{1}--\SI{2}{\milli\meter} of positional uncertainty at a \SI{100}{\milli\meter} lever arm, which significantly degrades:
+
+\begin{itemize}
+    \item Positioning accuracy in robotic manipulators
+    \item Bidirectional tracking performance in pan-tilt systems
+    \item Force control quality in compliant manipulation tasks
+    \item Repeatability in automated testing fixtures
+\end{itemize}
+
+Commercial solutions (harmonic drives, strain-wave gearboxes, or industrial anti-backlash servos) cost \$300--\$1000+ per axis, making them impractical for educational settings and budget-constrained research.
+
+\subsection{Hardware Overview}
+
+This open-source hardware system provides a practical, low-cost solution using a dual-motor configuration. Two STS3215 servos are mechanically coupled back-to-back with their gear trains biased against opposite flanks through a controlled position offset. This eliminates the overlapping dead zones, achieving near-zero effective backlash (\SI{0.09}{\degree}--\SI{0.18}{\degree}) while maintaining approximately \SI{80}{\percent} of combined torque capacity.
+
+The system consists of:
+\begin{enumerate}
+    \item \textbf{Dual-servo compensation unit:} Two STS3215 servos with 3D-printed mounting bracket and shaft coupling
+    \item \textbf{Control software:} Python library for synchronized servo control with pretension management
+    \item \textbf{Test stand (optional):} Mechanical fixture for backlash measurement and validation
+\end{enumerate}
+
+\subsection{Comparison with Existing Methods}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of backlash compensation approaches.}
+\label{tab:comparison}
+\small
+\begin{tabular}{llcll}
+\toprule
+\textbf{Approach} & \textbf{Cost} & \textbf{Backlash} & \textbf{Complexity} & \textbf{Torque Loss} \\
+\midrule
+Single STS3215 (baseline) & \$15--20 & \SI{1.3}{\degree} & Low & None \\
+Harmonic drive actuator & \$300--800 & $<$\SI{0.02}{\degree} & Low & None \\
+This work (dual STS3215) & \$45--60 & \SI{0.09}{\degree} & Medium & $\sim$20\% \\
+Software compensation only & \$15--20 & \SI{0.3}{\degree}--\SI{0.5}{\degree} & High & None \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Hardware Description}
+%==============================================================================
+
+\subsection{STS3215 Servo Specifications}
+
+The Feetech STS3215 servo provides the following specifications relevant to this design:
+
+\begin{table}[H]
+    \centering
+    \caption{STS3215 servo specifications.}
+    \label{tab:specs}
+    \begin{tabular}{ll}
+        \toprule
+        Specification & Value \\
+        \midrule
+        Operating voltage & \SI{12}{\volt} (range: \SIrange{4}{14}{\volt}) \\
+        Rated torque & \SI{10}{\kilo\gram\centi\meter} @ \SI{12}{\volt} \\
+        Stall (peak) torque & \SI{30}{\kilo\gram\centi\meter} @ \SI{12}{\volt} \\
+        Encoder resolution & 12-bit (4096 steps/revolution, \SI{0.088}{\degree}/step) \\
+        Gear type & Metal gearbox with steel gears and ball bearings \\
+        Gear ratio & 1:345 \\
+        Communication & Half-duplex TTL serial (daisy-chainable) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The servo uses a magnetic encoder positioned after the gearbox on the output shaft. This architecture means the encoder cannot directly observe internal gear backlash, but the internal PID controller's deadband allows indirect measurement.
+
+\subsection{Mechanical Configuration}
+
+Two STS3215 servos are mounted back-to-back with output shafts facing opposite directions. The shafts are rigidly coupled using:
+\begin{itemize}
+    \item Standard 25T servo horns (included with servos)
+    \item 3D-printed bridging clamp bracket secured with four M3 screws
+    \item Common mounting plate maintaining servo alignment
+\end{itemize}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\linewidth]{media/fig1_holder.png}
+    \caption{Two STS3215 servos mounted in the 3D-printed holder bracket.}
+    \label{fig:holder}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\linewidth]{media/fig2_bracket.png}
+    \caption{Dual-servo assembly with test bracket and lever arm attached.}
+    \label{fig:bracket}
+\end{figure}
+
+\subsection{Operating Principle}
+
+Each STS3215 has finite gearbox backlash. When a single motor reverses direction, the output shaft experiences free play as gear teeth transition between flanks. By coupling two motors and biasing them with opposing position offsets, each motor keeps its gear train loaded on a different flank. The dead zones no longer overlap, producing near-zero combined backlash.
+
+The pretension is achieved by assigning slightly different home positions to each motor. At steady state, each motor maintains a small position error, producing opposing torques of approximately \SI{3}{\percent} of stall torque (\SI{0.9}{\kilo\gram\centi\meter})---sufficient to eliminate slack while keeping current draw and heat generation modest.
+
+\subsection{Simple Model}
+
+Let each motor have a backlash half-width $b$ (in encoder counts). A single motor has an effective deadzone $[-b, +b]$ where small commanded position changes produce negligible output torque.
+
+When two motors are rigidly coupled with a position offset $d$ between their commanded angles, both gear trains remain seated on opposite flanks if:
+\[
+|d| > b_{\mathrm{eff}}
+\]
+where $b_{\mathrm{eff}}$ includes the controller deadband and mechanical play. The combined closed-loop stiffness becomes approximately the sum of individual stiffnesses, and the apparent deadzone collapses.
+
+%==============================================================================
+\section{Design Files Summary}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\caption{Design files overview.}
+\label{tab:designfiles}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Design file name} & \textbf{File type} & \textbf{License} & \textbf{Location} \\
+\midrule
+\multicolumn{4}{l}{\textit{Mechanical Design Files}} \\
+\midrule
+servo\_holder.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+servo\_holder.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+shaft\_coupler.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+shaft\_coupler.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+mounting\_plate.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+mounting\_plate.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Test Stand Design Files}} \\
+\midrule
+teststand\_base.step & CAD (STEP) & CERN-OHL-P & /cad/teststand/ \\
+teststand\_base.stl & 3D Print (STL) & CERN-OHL-P & /cad/teststand/ \\
+puller\_mount.stl & 3D Print (STL) & CERN-OHL-P & /cad/teststand/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Software}} \\
+\midrule
+sts3215\_control.py & Python module & MIT & /software/ \\
+dual\_servo.py & Python module & MIT & /software/ \\
+backlash\_test.py & Python script & MIT & /software/ \\
+calibration.py & Python script & MIT & /software/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Documentation}} \\
+\midrule
+assembly\_guide.pdf & Documentation & CC BY 4.0 & /docs/ \\
+wiring\_diagram.pdf & Schematic & CC BY 4.0 & /docs/ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Bill of Materials}
+%==============================================================================
+
+\subsection{Dual-Servo Compensation Unit}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for dual-servo compensation unit.}
+\label{tab:bom_main}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Serial bus servo, 30kg$\cdot$cm & 2 & \$18.00 & \$36.00 & AliExpress \\
+Servo holder bracket & 3D printed, PLA/PETG & 1 & \$2.00 & \$2.00 & Self-printed \\
+Shaft coupler bracket & 3D printed, PLA/PETG & 1 & \$1.50 & \$1.50 & Self-printed \\
+Mounting plate & 3D printed, PLA/PETG & 1 & \$1.50 & \$1.50 & Self-printed \\
+M3$\times$10 screw & Stainless steel & 8 & \$0.10 & \$0.80 & Hardware store \\
+M3$\times$16 screw & Stainless steel & 4 & \$0.12 & \$0.48 & Hardware store \\
+M3 hex nut & Stainless steel & 4 & \$0.05 & \$0.20 & Hardware store \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$42.48} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Control Electronics}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for control electronics.}
+\label{tab:bom_electronics}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+USB-TTL adapter & FT232RL or CH340, 3.3V & 1 & \$3.00 & \$3.00 & AliExpress \\
+12V power supply & 2A minimum, DC barrel & 1 & \$8.00 & \$8.00 & Amazon \\
+Servo cable & 3-pin, 200mm & 2 & \$0.50 & \$1.00 & Included \\
+Jumper wires & Female-female, 100mm & 4 & \$0.10 & \$0.40 & Electronics store \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$12.40} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Test Stand (Optional)}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for test stand (optional).}
+\label{tab:bom_teststand}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Puller motors & 2 & \$18.00 & \$36.00 & AliExpress \\
+Test stand base & 3D printed, PLA & 1 & \$4.00 & \$4.00 & Self-printed \\
+Puller mounts & 3D printed, PLA & 2 & \$1.00 & \$2.00 & Self-printed \\
+Test lever (100mm) & 3D printed, PLA & 3 & \$0.50 & \$1.50 & Self-printed \\
+Elastic bands & Rubber, 100mm & 2 & \$0.50 & \$1.00 & Office supply \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$44.50} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{1em}
+\noindent\textbf{Total Cost Summary:}
+\begin{itemize}
+    \item Compensation unit only: \textbf{\$42.48}
+    \item With control electronics: \textbf{\$54.88}
+    \item With test stand: \textbf{\$99.38}
+\end{itemize}
+
+%==============================================================================
+\section{Build Instructions}
+%==============================================================================
+
+\subsection{Required Tools}
+
+\begin{itemize}
+    \item 3D printer (FDM, 200mm$\times$200mm build volume minimum)
+    \item 2.5mm hex driver (for M3 screws)
+    \item Small Phillips screwdriver (for servo horn screws)
+    \item Computer with Python 3.8+ and USB port
+    \item Multimeter (optional, for troubleshooting)
+\end{itemize}
+
+\subsection{3D Printing Parameters}
+
+All parts are designed for FDM printing with the following recommended settings:
+\begin{itemize}
+    \item Material: PLA or PETG
+    \item Layer height: 0.2mm
+    \item Infill: 30\% (gyroid or grid pattern)
+    \item Perimeters: 3
+    \item No supports required for main components
+\end{itemize}
+
+\subsection{Assembly Steps}
+
+\subsubsection{Step 1: Prepare Servos}
+
+\begin{enumerate}
+    \item Remove factory servo horns from both STS3215 units.
+    \item Verify both servos have unique IDs (default is ID=1; reprogram one to ID=2 using the configuration software).
+    \item Connect servos to power and verify basic operation.
+\end{enumerate}
+
+\subsubsection{Step 2: Mount Servos in Holder}
+
+\begin{enumerate}
+    \item Insert both servos into the 3D-printed holder bracket with output shafts facing outward in opposite directions.
+    \item Secure each servo using four M3$\times$10 screws through the servo mounting tabs.
+    \item Verify servos are flush and parallel.
+\end{enumerate}
+
+\subsubsection{Step 3: Attach Servo Horns}
+
+\begin{enumerate}
+    \item Attach standard 25T servo horns to both output shafts.
+    \item Do not fully tighten center screws yet.
+    \item Ensure horns are aligned (both pointing the same direction when servos are at center position).
+\end{enumerate}
+
+\subsubsection{Step 4: Install Shaft Coupler}
+
+\begin{enumerate}
+    \item Place the 3D-printed shaft coupler bracket over both servo horns.
+    \item Align the four mounting holes with the horn screw holes.
+    \item Secure with four M3$\times$16 screws and M3 nuts.
+    \item Tighten the servo horn center screws.
+\end{enumerate}
+
+\subsubsection{Step 5: Wiring}
+
+\begin{enumerate}
+    \item Connect servo cables in daisy-chain configuration (Servo 1 OUT $\rightarrow$ Servo 2 IN).
+    \item Connect USB-TTL adapter to Servo 1 signal line.
+    \item Connect 12V power supply to servo power terminals.
+    \item Verify wiring with multimeter before powering on.
+\end{enumerate}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig3_teststand.png}
+    \caption{Complete assembly with test stand configuration.}
+    \label{fig:teststand}
+\end{figure}
+
+%==============================================================================
+\section{Operation Instructions}
+%==============================================================================
+
+\subsection{Software Installation}
+
+\begin{enumerate}
+    \item Install Python 3.8 or later.
+    \item Install required packages:
+    \begin{verbatim}
+    pip install pyserial numpy matplotlib
+    \end{verbatim}
+    \item Clone the repository or download from Zenodo.
+    \item Connect USB-TTL adapter and identify COM port.
+\end{enumerate}
+
+\subsection{Initial Calibration}
+
+\subsubsection{Step 1: Zero Position Setup}
+
+\begin{enumerate}
+    \item Power on the system with both servos connected.
+    \item Run the calibration script:
+\begin{lstlisting}[language=bash]
+python calibration.py --port COM3
+\end{lstlisting}
+    \item Follow prompts to center both servos mechanically.
+    \item The script will record the zero positions.
+\end{enumerate}
+
+\subsubsection{Step 2: Pretension Calibration}
+
+\begin{enumerate}
+    \item With servos at center, manually rotate the output slightly clockwise.
+    \item Record Motor 1's position as its home offset.
+    \item Rotate counter-clockwise and record Motor 2's home offset.
+    \item Verify current draw at rest is approximately 50--100mA (indicating proper pretension).
+\end{enumerate}
+
+\subsection{Basic Usage}
+
+\begin{lstlisting}[language=Python]
+from dual_servo import DualServoController
+
+# Initialize controller
+controller = DualServoController(port='COM3')
+
+# Move to position (0-4095 encoder counts)
+controller.move_to(2048)  # Center position
+
+# Move with specified speed
+controller.move_to(3000, speed=500)
+
+# Read current position
+position = controller.get_position()
+
+# Disable torque
+controller.disable()
+\end{lstlisting}
+
+\subsection{Force Application Sequence (for Testing)}
+
+The test procedure follows this sequence:
+\begin{enumerate}
+    \item Both elastic bands relaxed.
+    \item Test motor(s) move CW/CCW to preload gears, return to center.
+    \item Puller motors alternately apply \SI{0.3}{\kilo\gram force} load.
+    \item Between pulls, both bands are relaxed.
+    \item Telemetry is logged throughout.
+\end{enumerate}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig5_sequence_stage1.png}
+    \caption{Test sequence stage 1: Preparation phase with relaxed elastic bands.}
+    \label{fig:sequence1}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig6_sequence_stage2.png}
+    \caption{Test sequence stage 2: Alternating load application for backlash measurement.}
+    \label{fig:sequence2}
+\end{figure}
+
+%==============================================================================
+\section{Validation and Characterization}
+%==============================================================================
+
+\subsection{Measurement Methodology}
+
+The STS3215's magnetic encoder is positioned after the gearbox, preventing direct observation of internal gear backlash. However, the internal PID controller's deadband allows indirect measurement: when torque is enabled and small external force is applied, encoder readings change within the mechanical slack range.
+
+\subsubsection{Measurement Procedure}
+
+\begin{enumerate}
+    \item Command motor(s) to target position (2047 counts).
+    \item Execute preload motion sequence (CW then CCW).
+    \item Apply alternating \SI{0.3}{\kilo\gram force} via puller motors.
+    \item Record encoder positions during loaded and unloaded states.
+    \item Compute position deviation between CW and CCW loading.
+\end{enumerate}
+
+\subsubsection{Unit Conversions}
+
+With a 12-bit encoder (4096 counts/revolution):
+\begin{align}
+\Delta\theta &= \frac{360°}{4096} \approx 0.0879°/\text{count} \\
+\Delta x &\approx 0.0879° \times \frac{\pi}{180°} \times 100\text{mm} \approx 0.153\text{mm/count}
+\end{align}
+
+\subsection{Results}
+
+\subsubsection{Single Servo Baseline}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig7_single_servo.png}
+    \caption{Backlash measurement for single STS3215 servo under alternating load.}
+    \label{fig:single}
+\end{figure}
+
+Single STS3215 measured backlash:
+\begin{itemize}
+    \item Loaded (\SI{3}{\kilo\gram\centi\meter}): 14.78 counts $\approx$ \SI{1.30}{\degree} $\approx$ \SI{2.27}{\milli\meter}
+    \item Unloaded: 7.03 counts $\approx$ \SI{0.62}{\degree} $\approx$ \SI{1.08}{\milli\meter}
+\end{itemize}
+
+\subsubsection{Coupled Servos Without Compensation}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig8_coupled_default.png}
+    \caption{Backlash measurement for coupled servos without pretension offset.}
+    \label{fig:coupled_default}
+\end{figure}
+
+Coupled servos (no offset) measured backlash:
+\begin{itemize}
+    \item Loaded: 7.50--8.00 counts $\approx$ \SI{0.66}{\degree}--\SI{0.70}{\degree}
+    \item Unloaded: 6.00 counts $\approx$ \SI{0.53}{\degree}
+\end{itemize}
+
+\subsubsection{Coupled Servos With Pretension Compensation}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig9_coupled_comp.png}
+    \caption{Backlash measurement for coupled servos with home-position offset compensation.}
+    \label{fig:coupled_comp}
+\end{figure}
+
+Coupled servos with pretension offset:
+\begin{itemize}
+    \item Loaded: 0--2 counts $\approx$ \SI{0}{\degree}--\SI{0.18}{\degree}
+    \item Unloaded: 0--1 counts $\approx$ \SI{0}{\degree}--\SI{0.09}{\degree}
+\end{itemize}
+
+\subsection{Summary of Results}
+
+\begin{table}[H]
+    \centering
+    \caption{Backlash comparison across configurations. U: unloaded; L: loaded (\SI{0.3}{\kilo\gram force}).}
+    \label{tab:backlash}
+    \begin{tabular}{lccc}
+        \toprule
+        Configuration & Counts & Degrees & mm (@100mm) \\
+        \midrule
+        Single motor (U) & 7.03 & 0.62 & 1.07 \\
+        Single motor (L) & 14.78 & 1.30 & 2.26 \\
+        Coupled, no offset (U) & 6.00 & 0.53 & 0.92 \\
+        Coupled, no offset (L) & 8.00 & 0.70 & 1.22 \\
+        \textbf{Coupled, with offset (U)} & \textbf{1.00} & \textbf{0.09} & \textbf{0.15} \\
+        \textbf{Coupled, with offset (L)} & \textbf{2.00} & \textbf{0.18} & \textbf{0.31} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig10_position_comparison.png}
+    \caption{Position deviation comparison: uncompensated (left) vs. compensated (right).}
+    \label{fig:comparison}
+\end{figure}
+
+\subsection{Thermal and Electrical Characterization}
+
+\begin{itemize}
+    \item \textbf{Idle current:} 50--100mA per servo (with pretension)
+    \item \textbf{Operating temperature:} No significant increase observed during 30-minute continuous operation
+    \item \textbf{Torque capacity:} Approximately 80\% of combined dual-servo capacity available (20\% used for pretension)
+\end{itemize}
+
+\subsection{Repeatability}
+
+Multiple test cycles (n=10) showed consistent results with standard deviation $<$0.5 counts for the compensated configuration.
+
+%==============================================================================
+\section{Conclusions and Future Work}
+%==============================================================================
+
+This open-source hardware system demonstrates effective backlash compensation for low-cost STS3215 servo actuators. The dual-motor configuration with controlled pretension reduces effective backlash from \SI{1.30}{\degree} to approximately \SI{0.09}{\degree}---a 14$\times$ improvement approaching encoder resolution limits.
+
+The system is suitable for:
+\begin{itemize}
+    \item Educational robotics where precision is needed but budgets are limited
+    \item Research prototyping of robotic manipulators
+    \item Pan-tilt systems requiring smooth bidirectional motion
+    \item Automated test fixtures with repeatability requirements
+\end{itemize}
+
+\subsection{Future Work}
+
+\begin{itemize}
+    \item Dynamic pretension adjustment based on real-time torque feedback
+    \item Characterization with different servo models and gear ratios
+    \item Integration with ROS (Robot Operating System) for broader compatibility
+    \item Long-term durability testing under cyclic loading
+\end{itemize}
+
+%==============================================================================
+\section*{Declaration of Competing Interests}
+%==============================================================================
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+%==============================================================================
+\section*{Funding}
+%==============================================================================
+
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+%==============================================================================
+\section*{CRediT Authorship Contribution Statement}
+%==============================================================================
+
+\textbf{Boris Kotov:} Conceptualization, Methodology, Hardware design, Software development, Validation, Writing -- original draft, Writing -- review \& editing.
+
+%==============================================================================
+\section*{Acknowledgments}
+%==============================================================================
+
+The author thanks the open-source hardware community for inspiration and the Feetech documentation team for technical specifications.
+
+%==============================================================================
+\section*{Human and Animal Rights}
+%==============================================================================
+
+This work did not involve human subjects or animals.
+
+%==============================================================================
+\nocite{*}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}
+
