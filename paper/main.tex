@@ -9,6 +9,7 @@
 \usepackage{hyperref}
 \usepackage{xurl}
 \usepackage{caption}
+\usepackage{placeins}
 
 \title{Backlash Compensation in STS3215 Servo Actuators}
 \author{Boris Kotov\\
@@ -354,6 +355,8 @@ With the home-position offset (pretension) applied, the measured position deviat
 
 With a small home-position offset that preloads the two servos against opposite gear flanks, the apparent backlash is reduced to 1--2 encoder counts, i.e., on the order of the encoder's own resolution (approximately \SIrange{0.09}{0.18}{\degree}, \SIrange{0.15}{0.31}{\milli\meter} at \SI{100}{\milli\meter} radius). This is a very significant improvement over the single-motor case and a clear improvement over the uncompensated dual-motor configuration.
 
+\FloatBarrier
+
 \subsection{Results Summary}
 
 To enable direct comparison among all test configurations, backlash values for both loaded (L) and unloaded (U) conditions were compiled into a single results table. For dual-motor setups, the larger (worst-case) deviation between the two servos is used to represent system backlash.
@@ -375,6 +378,8 @@ To enable direct comparison among all test configurations, backlash values for b
         \bottomrule
     \end{tabular}
 \end{table}
+
+\FloatBarrier
 
 \section{Conclusions}
 
