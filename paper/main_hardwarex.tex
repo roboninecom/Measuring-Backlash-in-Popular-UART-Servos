@@ -129,7 +129,8 @@ This open-source hardware system provides a practical, low-cost solution using a
 The system consists of:
 \begin{enumerate}
     \item \textbf{Dual-servo compensation unit:} Two STS3215 servos with 3D-printed mounting bracket and shaft coupling
-    \item \textbf{Control software:} Nodejs application for synchronized servo control with pretension management
+    \item \textbf{Control software:} Nodejs application for synchronized servo control
+    \item \textbf{Visualization and analysis software:} Python 3 application for test results comparison and visualization
     \item \textbf{Test stand (optional):} Mechanical fixture for backlash measurement and validation
 \end{enumerate}
 
@@ -186,7 +187,7 @@ The servo uses a magnetic encoder positioned after the gearbox on the output sha
 Two STS3215 servos are mounted back-to-back with output shafts facing opposite directions. The shafts are rigidly coupled using:
 \begin{itemize}
     \item Standard 25T servo horns (included with servos)
-    \item 3D-printed bridging clamp bracket secured with four M3 screws
+    \item 3D-printed bridging clamp bracket secured with eight M3 screws
     \item Common mounting plate maintaining servo alignment
 \end{itemize}
 
@@ -358,11 +359,10 @@ Elastic bands & Rubber, 100mm & 2 & \$0.50 & \$1.00 & Office supply \\
 \subsection{Required Tools}
 
 \begin{itemize}
-    \item 3D printer (FDM, 200mm$\times$200mm build volume minimum)
+    \item 3D printer
     \item 2.5mm hex driver (for M3 screws)
-    \item Small Phillips screwdriver (for servo horn screws)
-    \item Computer with Python 3.8+ and USB port
-    \item Multimeter (optional, for troubleshooting)
+    \item Small Phillips screwdriver (for servo mount screws)
+    \item Computer with Python 3.8+, Nodejs 18+ and USB port
 \end{itemize}
 
 \subsection{3D Printing Parameters}
@@ -373,7 +373,7 @@ All parts are designed for FDM printing with the following recommended settings:
     \item Layer height: 0.2mm
     \item Infill: 30\% (gyroid or grid pattern)
     \item Perimeters: 3
-    \item No supports required for main components
+    \item Use supports for test bracket with lever.
 \end{itemize}
 
 \subsection{Assembly Steps}
@@ -381,43 +381,40 @@ All parts are designed for FDM printing with the following recommended settings:
 \subsubsection{Step 1: Prepare Servos}
 
 \begin{enumerate}
-    \item Remove factory servo horns from both STS3215 units.
-    \item Verify both servos have unique IDs (default is ID=1; reprogram one to ID=2 using the configuration software).
-    \item Connect servos to power and verify basic operation.
+    \item Attach standard 25T servo horns (aluminum disks) to both output shafts.
+    \item Verify both servos have unique IDs (default is ID=1; reprogram one to ID=2 using Feetech configuration software).
+    \item Connect servos to power and verify basic operation using Feetch configuration software.
+
 \end{enumerate}
 
 \subsubsection{Step 2: Mount Servos in Holder}
 
 \begin{enumerate}
     \item Insert both servos into the 3D-printed holder bracket with output shafts facing outward in opposite directions.
-    \item Secure each servo using four M3$\times$10 screws through the servo mounting tabs.
-    \item Verify servos are flush and parallel.
+    \item Secure each servo using screws through the servo mounting tabs.
 \end{enumerate}
 
-\subsubsection{Step 3: Attach Servo Horns}
-
-\begin{enumerate}
-    \item Attach standard 25T servo horns to both output shafts.
-    \item Do not fully tighten center screws yet.
-    \item Ensure horns are aligned (both pointing the same direction when servos are at center position).
-\end{enumerate}
-
-\subsubsection{Step 4: Install Shaft Coupler}
+\subsubsection{Step 3: Install Shaft Coupler}
 
 \begin{enumerate}
     \item Place the 3D-printed shaft coupler bracket over both servo horns.
     \item Align the four mounting holes with the horn screw holes.
-    \item Secure with four M3$\times$16 screws and M3 nuts.
-    \item Tighten the servo horn center screws.
+    \item Secure with four M3$\times$5 screws.
 \end{enumerate}
 
-\subsubsection{Step 5: Wiring}
+\subsubsection{Step 4: Wiring}
 
 \begin{enumerate}
     \item Connect servo cables in daisy-chain configuration (Servo 1 OUT $\rightarrow$ Servo 2 IN).
-    \item Connect USB-TTL adapter to Servo 1 signal line.
-    \item Connect 12V power supply to servo power terminals.
-    \item Verify wiring with multimeter before powering on.
+    \item Connect USB-TTL adapter to Servo 1.
+    \item Connect 12V power supply to USB-TTL adapter power terminals.
+\end{enumerate}
+
+\subsubsection{Step 5: Pulling servos (optional)}
+\begin{enumerate}
+    \item Repeat steps 1 through 4 for the pulling servos. Assign servo IDs 3 and 4. Use the mount holders and levers designated for a single motor.
+    \item Fix all servo mounts on a common base plate or table. Use either clamps or screws.
+    \item Use two elastic rubber bands to soft-couple all 3 levers.
 \end{enumerate}
 
 \begin{figure}[ht]
@@ -433,14 +430,35 @@ All parts are designed for FDM printing with the following recommended settings:
 
 \subsection{Software Installation}
 
+\subsubsection{Prerequisites}
+\begin{itemize}
+    \item For setup and calibration: Feetech FD1.9.8.2 or later.
+    \item For main test application: Node.js (v18+), NPM. 
+    \item For logs analysis and visualization: python3, pip
+\end{itemize}
+
+\subsubsection{Test software}
 \begin{enumerate}
-    \item Install Python 3.8 or later.
-    \item Install required packages:
-    \begin{verbatim}
-    pip install pyserial numpy matplotlib
-    \end{verbatim}
     \item Clone the repository or download from Zenodo.
+    \item Install required packages. In project directory run:
+    \begin{lstlisting}[language=bash]
+    npm install
+    \end{lstlisting}
     \item Connect USB-TTL adapter and identify COM port.
+    \item Configure environment variables. Create a .env file or set these manually:
+    \begin{verbatim}
+    export SERIAL_PORT={YOUR_COM_PORT}
+    export SERIAL_BAUD_RATE=1000000
+    \end{verbatim}
+\end{enumerate}
+
+\subsubsection{Software for visualization}
+\begin{enumerate}
+    \item Install required packages:
+    \begin{lstlisting}[language=bash]
+    pip install pandas matplotlib numpy
+    \end{lstlisting}
+
 \end{enumerate}
 
 \subsection{Initial Calibration}
@@ -448,55 +466,45 @@ All parts are designed for FDM printing with the following recommended settings:
 \subsubsection{Step 1: Zero Position Setup}
 
 \begin{enumerate}
-    \item Power on the system with both servos connected.
-    \item Run the calibration script:
-\begin{lstlisting}[language=bash]
-python calibration.py --port COM3
-\end{lstlisting}
-    \item Follow prompts to center both servos mechanically.
-    \item The script will record the zero positions.
+    \item Power on the system with all servos connected.
+    \item Put all levers in vertical position
+    \item Using Feetech FD software, set the middle position for each motor.
 \end{enumerate}
 
-\subsubsection{Step 2: Pretension Calibration}
+\subsubsection{Step 2: Tested Motors Pretension Calibration}
 
 \begin{enumerate}
     \item With servos at center, manually rotate the output slightly clockwise.
     \item Record Motor 1's position as its home offset.
     \item Rotate counter-clockwise and record Motor 2's home offset.
-    \item Verify current draw at rest is approximately 50--100mA (indicating proper pretension).
+    \item Verify that the torque value for each motor is about 20-30 (indicating proper pretension).
 \end{enumerate}
 
-\subsection{Basic Usage}
+\subsection{Running the Experiment}
 
-\begin{lstlisting}[language=Python]
-from dual_servo import DualServoController
-
-# Initialize controller
-controller = DualServoController(port='COM3')
-
-# Move to position (0-4095 encoder counts)
-controller.move_to(2048)  # Center position
-
-# Move with specified speed
-controller.move_to(3000, speed=500)
-
-# Read current position
-position = controller.get_position()
-
-# Disable torque
-controller.disable()
+\begin{lstlisting}[language=bash]
+    node app.js
 \end{lstlisting}
-
-\subsection{Force Application Sequence (for Testing)}
 
 The test procedure follows this sequence:
 \begin{enumerate}
     \item Both elastic bands relaxed.
-    \item Test motor(s) move CW/CCW to preload gears, return to center.
+    \item Test motor(s) move CW/CCW to preload gears, then return to center.
     \item Puller motors alternately apply \SI{0.3}{\kilo\gram force} load.
     \item Between pulls, both bands are relaxed.
     \item Telemetry is logged throughout.
 \end{enumerate}
+
+\subsection{Visualization and analysis}
+Visualize a specific log file
+\begin{lstlisting}[language=bash]
+    python software/logs_visualisation/log_viz.py logs/motor_telemetry.csv
+\end{lstlisting}
+
+Calculate backlash statistics
+\begin{lstlisting}[language=bash]
+    python software/logs_calculation/log_calc.py logs/motor_telemetry.csv
+\end{lstlisting}
 
 \begin{figure}[ht]
     \centering
@@ -617,7 +625,7 @@ Coupled servos with pretension offset:
 \begin{itemize}
     \item \textbf{Idle current:} 50--100mA per servo (with pretension)
     \item \textbf{Operating temperature:} No significant increase observed during 30-minute continuous operation
-    \item \textbf{Torque capacity:} Approximately 80\% of combined dual-servo capacity available (20\% used for pretension)
+    \item \textbf{Torque capacity:} Approximately 80\% of combined dual-servo capacity available
 \end{itemize}
 
 \subsection{Repeatability}
@@ -683,4 +691,3 @@ This work did not involve human subjects or animals.
 \bibliography{references}
 
 \end{document}
-
