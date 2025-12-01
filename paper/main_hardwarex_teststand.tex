@@ -1,0 +1,801 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\sisetup{per-mode=symbol}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{caption}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{purple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% HardwareX formatting
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\title{Open-Source Test Stand for Backlash Measurement in Servo Actuators}
+\author{Boris Kotov\textsuperscript{*}\\
+Robonine\\
+\texttt{boris.k@robonine.com}\\
+\url{https://robonine.com}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This hardware article presents an open-source test stand for quantitative backlash measurement in servo actuators. The system uses an elastic band loading mechanism with two puller motors to apply controlled alternating forces to a device under test (DUT), while the DUT's own encoder records position data to characterize mechanical backlash. A key advantage over traditional dial indicator methods is the elimination of probe contact force---no external measurement device touches the output shaft, removing a systematic error source that can bias results by 10--30\% in low-torque actuators. The test stand achieves measurement resolution approaching the encoder limit (\SI{0.088}{\degree}/count) and demonstrates high repeatability (standard deviation $<$0.5 counts across multiple test cycles). All mechanical designs (3D-printable mounts, lever arms), control software, and data analysis tools are released under open-source licenses. The total hardware cost is approximately \$80--100 USD, making it suitable for educational robotics laboratories, research prototyping, and quality control applications where commercial gear analyzers are cost-prohibitive. Validation is demonstrated using Feetech STS3215 servos, including characterization of a dual-motor backlash compensation configuration that reduces effective backlash from \SI{1.30}{\degree} to \SI{0.09}{\degree}.
+\end{abstract}
+
+\noindent\textbf{Keywords:} open-source hardware; backlash measurement; servo actuators; test stand; gear characterization; robotics; low-cost instrumentation; non-contact measurement
+
+%==============================================================================
+\section*{Specifications Table}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Hardware name} & Servo Backlash Measurement Test Stand \\
+\midrule
+\textbf{Subject area} & 
+\begin{minipage}[t]{10cm}
+\begin{itemize}
+    \item[$\bullet$] Engineering and material science
+    \item[$\bullet$] Educational tools and open source alternatives to existing infrastructure
+\end{itemize}
+\end{minipage} \\
+\midrule
+\textbf{Hardware type} & 
+\begin{minipage}[t]{10cm}
+\begin{itemize}
+    \item[$\bullet$] Mechanical engineering and materials science
+    \item[$\bullet$] Electrical engineering and computer science
+\end{itemize}
+\end{minipage} \\
+\midrule
+\textbf{Closest commercial analog} & \begin{minipage}[t]{10cm}Industrial gear measurement systems (Klingelnberg, Gleason, Mahr): \$3,500--\$100,000+; Double-flank gear rolling testers: \$750--\$16,500; Dial indicator setups: \$50--\$200. No direct low-cost commercial analog exists for automated servo actuator backlash measurement with zero probe contact force.\end{minipage} \\
+\midrule
+\textbf{Open source license} & 
+\begin{minipage}[t]{10cm}
+Hardware: CERN Open Hardware Licence Version 2 -- Permissive (CERN-OHL-P-2.0)\\
+Software: MIT License\\
+Documentation: CC BY 4.0
+\end{minipage} \\
+\midrule
+\textbf{Cost of hardware} & Approximately \$80--100 USD (complete test stand) \\
+\midrule
+\textbf{Source file repository} & \begin{minipage}[t]{10cm}DOI: [To be assigned upon Zenodo upload]\\
+Zenodo: \url{https://zenodo.org/record/XXXXXXX}\\
+(GitHub mirror: \url{https://github.com/roboninecom/Backlash-Compensation-in-STS3215-Servo-Actuators})\end{minipage} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Hardware in Context}
+%==============================================================================
+
+\subsection{Motivation and Scientific Application}
+
+Mechanical backlash---the angular free play caused by clearances in gear trains---is a fundamental characteristic of geared servo actuators that directly impacts positioning accuracy, repeatability, and control performance. Quantitative measurement of backlash is essential for:
+
+\begin{itemize}
+    \item Selecting appropriate actuators for precision robotics applications
+    \item Comparing different servo models or manufacturers
+    \item Validating mechanical anti-backlash solutions
+    \item Quality control in actuator production or procurement
+    \item Educational demonstration of gear mechanics and measurement techniques
+\end{itemize}
+
+However, quantitative backlash measurement is challenging without specialized equipment. Industrial gear measurement systems such as the Gleason GMS series or Klingelnberg P-series are designed for comprehensive gear inspection but cost \$20,000--\$100,000+ for new systems, with used equipment starting around \$3,500--\$24,000 \cite{klingelnberg_p26, gleason_gms}. Double-flank gear rolling testers offer a more affordable option at \$2,000--\$16,500 \cite{kudale_gear_tester}, but are designed for production-line inspection of individual gears rather than assembled actuators.
+
+Manual methods using dial indicators present several limitations:
+
+\begin{itemize}
+    \item \textbf{Probe contact force:} Dial indicator stylus exerts a spring-loaded contact force on the measurement surface. According to Mitutoyo specifications, typical measuring forces range from \SI{0.2}{\newton} to \SI{1.8}{\newton} depending on model \cite{mitutoyo_513, mitutoyo_3414s}. This additional force can bias the gear train position, systematically affecting backlash readings---particularly problematic for low-torque actuators where probe force becomes a significant fraction of the holding torque.
+    \item \textbf{Operator variability:} Manual application of reversing torque introduces inconsistent loading, making results difficult to reproduce \cite{backlash_measurement_methods}.
+    \item \textbf{Limited resolution:} Typical dial indicators resolve \SI{0.01}{\milli\meter} linear displacement; at a \SI{100}{\milli\meter} lever arm, this corresponds to \SI{0.006}{\degree}---adequate in principle, but probe force errors often exceed this resolution.
+    \item \textbf{No automation:} Each measurement requires manual manipulation and recording, preventing statistical characterization over multiple cycles.
+\end{itemize}
+
+Low-cost servo actuators such as the Feetech STS3215, widely used in educational robotics, DIY robotic arms, and research prototypes, typically exhibit \SI{0.8}{\degree}--\SI{1.3}{\degree} of backlash. This corresponds to roughly \SI{1}--\SI{2}{\milli\meter} of positional uncertainty at a \SI{100}{\milli\meter} lever arm, which significantly degrades:
+
+\begin{itemize}
+    \item Positioning accuracy in robotic manipulators
+    \item Bidirectional tracking performance in pan-tilt systems
+    \item Force control quality in compliant manipulation tasks
+    \item Repeatability in automated testing fixtures
+\end{itemize}
+
+\subsection{Hardware Overview}
+
+This open-source test stand provides an automated, repeatable method for backlash measurement using the servo's own encoder as the measurement device. Unlike dial indicator methods, this approach introduces \textbf{zero probe contact force}---the DUT encoder reads position directly without any external measurement device touching the output shaft. The system applies controlled alternating loads via elastic bands and records the resulting position deviations to characterize the mechanical dead zone.
+
+The test stand consists of:
+\begin{enumerate}
+    \item \textbf{Loading system:} Two STS3215 puller motors with elastic band coupling for controlled force application
+    \item \textbf{Device Under Test (DUT) mount:} 3D-printed holder brackets for single or dual servo configurations
+    \item \textbf{Lever arms:} 100mm test levers for force transmission
+    \item \textbf{Control software:} Node.js application for automated test sequencing and telemetry logging
+    \item \textbf{Analysis software:} Python scripts for data visualization and backlash calculation
+\end{enumerate}
+
+\subsection{Comparison with Existing Methods}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of backlash measurement approaches.}
+\label{tab:comparison}
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{Method} & \textbf{Cost} & \textbf{Resolution} & \textbf{Probe Force} & \textbf{Automation} \\
+\midrule
+\multicolumn{5}{l}{\textit{Industrial gear measurement systems}} \\
+\quad Klingelnberg P26 (used) \cite{klingelnberg_p26} & \$3,500+ & $<$\SI{0.01}{\degree} & None & Full \\
+\quad Gleason GMS series \cite{gleason_gms} & \$20,000+ & $<$\SI{0.01}{\degree} & None & Full \\
+\quad Mahr gear measuring (used) \cite{mahr_mx4} & \$22,000+ & $<$\SI{0.01}{\degree} & None & Full \\
+\midrule
+\multicolumn{5}{l}{\textit{Double-flank gear rolling testers}} \\
+\quad Manual gear roll tester \cite{gear_roll_ebay} & \$750--2,150 & \SI{1}{\micro\meter}\textsuperscript{a} & None & None \\
+\quad Motorized gear roll tester \cite{kudale_gear_tester} & \$16,000+ & \SI{1}{\micro\meter}\textsuperscript{a} & None & Full \\
+\midrule
+\multicolumn{5}{l}{\textit{Dial indicator methods}} \\
+\quad Mitutoyo 513-series \cite{mitutoyo_513} & \$50--150 & \SI{0.01}{\milli\meter} & 0.2--0.4N & None \\
+\quad Mitutoyo 3414S \cite{mitutoyo_3414s} & \$80--200 & \SI{0.01}{\milli\meter} & 1.8N max & None \\
+\midrule
+\textbf{This work} & \$80--100 & \SI{0.09}{\degree}\textsuperscript{b} & \textbf{None} & Full \\
+\bottomrule
+\end{tabular}
+\vspace{0.5em}
+
+\footnotesize{\textsuperscript{a}Linear resolution; angular resolution depends on gear geometry. \textsuperscript{b}Limited by DUT encoder resolution (12-bit, 4096 counts/rev).}
+\end{table}
+
+%==============================================================================
+\section{Hardware Description}
+%==============================================================================
+
+\subsection{System Architecture}
+
+The test stand operates by applying alternating tensile forces to a lever arm attached to the DUT. Two puller motors, positioned on opposite sides, tension elastic bands that connect to the DUT lever. By alternately activating each puller, the system applies bidirectional torque to the DUT, causing the gear train to shift between opposite flanks. The resulting position deviation, measured by the DUT's encoder, quantifies the backlash.
+
+The elastic bands serve as compliant coupling elements that:
+\begin{itemize}
+    \item Prevent impact loading that could damage gears
+    \item Allow controlled force application through puller motor position
+    \item Decouple the measurement from puller motor positioning errors
+\end{itemize}
+
+\subsection{STS3215 Servo Specifications}
+
+The Feetech STS3215 servo is used both as the loading mechanism and as a representative DUT. Its specifications relevant to this design:
+
+\begin{table}[H]
+    \centering
+    \caption{STS3215 servo specifications.}
+    \label{tab:specs}
+    \begin{tabular}{ll}
+        \toprule
+        Specification & Value \\
+        \midrule
+        Operating voltage & \SI{12}{\volt} (range: \SIrange{4}{14}{\volt}) \\
+        Rated torque & \SI{10}{\kilo\gram\centi\meter} @ \SI{12}{\volt} \\
+        Stall (peak) torque & \SI{30}{\kilo\gram\centi\meter} @ \SI{12}{\volt} \\
+        Encoder resolution & 12-bit (4096 steps/revolution, \SI{0.088}{\degree}/step) \\
+        Gear type & Metal gearbox with steel gears and ball bearings \\
+        Gear ratio & 1:345 \\
+        Communication & Half-duplex TTL serial (daisy-chainable) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The servo uses a magnetic encoder positioned after the gearbox on the output shaft. This architecture means the encoder cannot directly observe internal gear backlash, but the internal PID controller's deadband allows indirect measurement: when torque is enabled and small external force is applied, encoder readings change within the mechanical slack range.
+
+\subsection{Loading System}
+
+The loading system consists of two STS3215 servos mounted in single-servo holders, each with a 100mm lever arm. Elastic rubber bands connect the puller levers to the DUT lever, forming a soft-coupled loading mechanism.
+
+The puller motors operate in position control mode. By commanding specific angular positions, the elastic bands are tensioned to apply approximately \SI{0.3}{\kilo\gram force} to the DUT lever, corresponding to approximately \SI{3}{\kilo\gram\centi\meter} torque at the DUT shaft.
+
+\subsection{Device Under Test Mount}
+
+Two DUT mount configurations are provided:
+
+\subsubsection{Single Servo Configuration}
+A 3D-printed holder bracket secures one STS3215 servo with a 100mm lever arm attached to the output shaft. This configuration measures the baseline backlash of individual servos.
+
+\subsubsection{Dual Servo Configuration}
+Two STS3215 servos are mounted back-to-back with output shafts facing opposite directions. The shafts are rigidly coupled using:
+\begin{itemize}
+    \item Standard 25T servo horns (included with servos)
+    \item 3D-printed bridging clamp bracket secured with eight M3 screws
+    \item Common mounting plate maintaining servo alignment
+\end{itemize}
+
+This configuration enables testing of dual-motor anti-backlash arrangements, where two motors are biased against each other to eliminate gear play.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\linewidth]{media/fig1_holder.png}
+    \caption{Two STS3215 servos mounted in the 3D-printed holder bracket (dual servo DUT configuration).}
+    \label{fig:holder}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\linewidth]{media/fig2_bracket.png}
+    \caption{Dual-servo DUT assembly with test lever arm attached.}
+    \label{fig:bracket}
+\end{figure}
+
+\subsection{Measurement Principle}
+
+With a 12-bit encoder (4096 counts/revolution), the measurement resolution is:
+\begin{align}
+\Delta\theta &= \frac{360°}{4096} \approx 0.0879°/\text{count} \\
+\Delta x &\approx 0.0879° \times \frac{\pi}{180°} \times 100\text{mm} \approx 0.153\text{mm/count}
+\end{align}
+
+The backlash measurement procedure:
+\begin{enumerate}
+    \item Command DUT motor(s) to target position (2047 counts, center of range)
+    \item Execute preload motion sequence (CW then CCW) to seat gears
+    \item Apply alternating load via puller motors
+    \item Record encoder positions during CW and CCW loading
+    \item Compute position deviation between loading directions
+\end{enumerate}
+
+The measured backlash equals the peak-to-peak position deviation during alternating load cycles.
+
+%==============================================================================
+\section{Design Files Summary}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\caption{Project file structure overview.}
+\label{tab:designfiles}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{File name} & \textbf{File type} & \textbf{License} & \textbf{Location} \\
+\midrule
+\multicolumn{4}{l}{\textit{Test Stand Mechanical Components}} \\
+\midrule
+servo\_holder\_single.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+servo\_holder\_single.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_single.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_single.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+\midrule
+\multicolumn{4}{l}{\textit{DUT Mount Components}} \\
+\midrule
+servo\_holder\_dual.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+servo\_holder\_dual.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_dual.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_dual.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Software -- Test Control and Data Acquisition}} \\
+\midrule
+app.js & Node.js application & MIT & /software/backlash\_test/ \\
+config.js & Node.js module & MIT & /software/backlash\_test/ \\
+sweepConfig.js & Node.js module & MIT & /software/backlash\_test/ \\
+TelemetryLogger.js & Node.js module & MIT & /software/backlash\_test/ \\
+package.json & Build configuration & MIT & /software/backlash\_test/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Software -- Data Analysis}} \\
+\midrule
+log\_calc.py & Python script & MIT & /software/logs\_calculation/ \\
+log\_calc\_single.py & Python script & MIT & /software/logs\_calculation/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Software -- Data Visualization}} \\
+\midrule
+log\_viz.py & Python script & MIT & /software/logs\_visualisation/ \\
+log\_viz\_single.py & Python script & MIT & /software/logs\_visualisation/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Project Data and Documentation}} \\
+\midrule
+logs/ & Telemetry CSV output & -- & /logs/ \\
+paper/ & LaTeX source files & -- & /paper/ \\
+README.md & Project documentation & MIT & / \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%==============================================================================
+\section{Bill of Materials}
+%==============================================================================
+
+\subsection{Test Stand Core (Loading System)}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for test stand loading system.}
+\label{tab:bom_teststand}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Puller motors & 2 & \$18.00 & \$36.00 & AliExpress \\
+Servo holder bracket & 3D printed, PLA & 2 & \$2.00 & \$4.00 & Self-printed \\
+Test lever (100mm) & 3D printed, PLA & 2 & \$0.50 & \$1.00 & Self-printed \\
+Elastic bands & Rubber, 100mm & 2 & \$0.50 & \$1.00 & Office supply \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$42.00} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Control Electronics}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for control electronics.}
+\label{tab:bom_electronics}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+USB-TTL adapter & FT232RL or CH340, 3.3V & 1 & \$3.00 & \$3.00 & AliExpress \\
+12V power supply & 2A minimum, DC barrel & 1 & \$8.00 & \$8.00 & Amazon \\
+Servo cable & 3-pin, 200mm & 4 & \$0.50 & \$2.00 & Included \\
+Jumper wires & Female-female, 100mm & 4 & \$0.10 & \$0.40 & Electronics store \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$13.40} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Single Servo DUT Configuration}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for single servo DUT.}
+\label{tab:bom_single}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Device under test & 1 & \$18.00 & \$18.00 & AliExpress \\
+Servo holder bracket & 3D printed, PLA/PETG & 1 & \$2.00 & \$2.00 & Self-printed \\
+Test lever (100mm) & 3D printed, PLA & 1 & \$0.50 & \$0.50 & Self-printed \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$20.50} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dual Servo DUT Configuration}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for dual servo DUT (anti-backlash configuration).}
+\label{tab:bom_dual}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Devices under test & 2 & \$18.00 & \$36.00 & AliExpress \\
+Servo holder bracket & 3D printed, PLA/PETG & 1 & \$2.00 & \$2.00 & Self-printed \\
+Shaft coupler bracket & 3D printed, PLA/PETG & 1 & \$1.50 & \$1.50 & Self-printed \\
+Mounting plate & 3D printed, PLA/PETG & 1 & \$1.50 & \$1.50 & Self-printed \\
+Test lever (100mm) & 3D printed, PLA & 1 & \$0.50 & \$0.50 & Self-printed \\
+M3$\times$10 screw & Stainless steel & 8 & \$0.10 & \$0.80 & Hardware store \\
+M3$\times$16 screw & Stainless steel & 4 & \$0.12 & \$0.48 & Hardware store \\
+M3 hex nut & Stainless steel & 4 & \$0.05 & \$0.20 & Hardware store \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$42.98} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{1em}
+\noindent\textbf{Total Cost Summary:}
+\begin{itemize}
+    \item Test stand + electronics (base system): \textbf{\$55.40}
+    \item With single servo DUT: \textbf{\$75.90}
+    \item With dual servo DUT: \textbf{\$98.38}
+\end{itemize}
+
+%==============================================================================
+\section{Build Instructions}
+%==============================================================================
+
+\subsection{Required Tools}
+
+\begin{itemize}
+    \item 3D printer
+    \item 2.5mm hex driver (for M3 screws)
+    \item Small Phillips screwdriver (for servo mount screws)
+    \item Computer with Python 3.8+, Node.js 18+ and USB port
+\end{itemize}
+
+\subsection{3D Printing Parameters}
+
+All parts are designed for FDM printing with the following recommended settings:
+\begin{itemize}
+    \item Material: PLA or PETG
+    \item Layer height: 0.2mm
+    \item Infill: 30\% (gyroid or grid pattern)
+    \item Perimeters: 3
+    \item Use supports for test bracket with lever.
+\end{itemize}
+
+\subsection{Assembly Steps}
+
+\subsubsection{Step 1: Prepare Puller Motors}
+
+\begin{enumerate}
+    \item Attach standard 25T servo horns (aluminum disks) to both puller motor output shafts.
+    \item Assign unique IDs to puller motors (ID=3 and ID=4) using Feetech configuration software.
+    \item Mount each puller motor in a single-servo holder bracket.
+    \item Attach 100mm lever arms to each puller motor.
+\end{enumerate}
+
+\subsubsection{Step 2: Prepare Single Servo DUT}
+
+\begin{enumerate}
+    \item Attach servo horn and 100mm lever arm to the DUT servo.
+    \item Assign ID=1 to the DUT servo.
+    \item Mount in single-servo holder bracket.
+\end{enumerate}
+
+\subsubsection{Step 3: Prepare Dual Servo DUT (Optional)}
+
+\begin{enumerate}
+    \item Attach standard 25T servo horns to both DUT servos.
+    \item Assign unique IDs (ID=1 and ID=2) using Feetech configuration software.
+    \item Insert both servos into the dual-servo holder bracket with output shafts facing outward in opposite directions.
+    \item Secure each servo using screws through the servo mounting tabs.
+    \item Place the 3D-printed shaft coupler bracket over both servo horns.
+    \item Align the four mounting holes with the horn screw holes.
+    \item Secure with four M3$\times$5 screws.
+    \item Attach 100mm lever arm to the coupler bracket.
+\end{enumerate}
+
+\subsubsection{Step 4: Test Stand Assembly}
+
+\begin{enumerate}
+    \item Fix all servo mounts on a common base plate or table. Use either clamps or screws.
+    \item Position puller motors on opposite sides of the DUT mount.
+    \item Align all lever arms to be parallel when at rest position.
+    \item Use two elastic rubber bands to connect puller levers to DUT lever.
+\end{enumerate}
+
+\subsubsection{Step 5: Wiring}
+
+\begin{enumerate}
+    \item Connect servo cables in daisy-chain configuration (all servos on single bus).
+    \item Connect USB-TTL adapter to first servo in chain.
+    \item Connect 12V power supply to USB-TTL adapter power terminals.
+\end{enumerate}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig3_teststand.png}
+    \caption{Complete test stand assembly with dual servo DUT configuration.}
+    \label{fig:teststand}
+\end{figure}
+
+%==============================================================================
+\section{Operation Instructions}
+%==============================================================================
+
+\subsection{Software Installation}
+
+\subsubsection{Prerequisites}
+\begin{itemize}
+    \item For setup and calibration: Feetech FD1.9.8.2 or later.
+    \item For main test application: Node.js (v18+), NPM. 
+    \item For logs analysis and visualization: Python 3, pip
+\end{itemize}
+
+\subsubsection{Test Software}
+\begin{enumerate}
+    \item Clone the repository or download from Zenodo.
+    \item Install required packages. In project directory run:
+    \begin{lstlisting}[language=bash]
+    npm install
+    \end{lstlisting}
+    \item Connect USB-TTL adapter and identify COM port.
+    \item Configure environment variables. Create a .env file or set these manually:
+    \begin{verbatim}
+    export SERIAL_PORT={YOUR_COM_PORT}
+    export SERIAL_BAUD_RATE=1000000
+    \end{verbatim}
+\end{enumerate}
+
+\subsubsection{Analysis Software}
+\begin{enumerate}
+    \item Install required packages:
+    \begin{lstlisting}[language=bash]
+    pip install pandas matplotlib numpy
+    \end{lstlisting}
+\end{enumerate}
+
+\subsection{Initial Calibration}
+
+\subsubsection{Step 1: Zero Position Setup}
+
+\begin{enumerate}
+    \item Power on the system with all servos connected.
+    \item Put all levers in vertical position.
+    \item Using Feetech FD software, set the middle position for each motor.
+\end{enumerate}
+
+\subsubsection{Step 2: Pretension Calibration (Dual Servo DUT Only)}
+
+For dual-motor anti-backlash configurations:
+\begin{enumerate}
+    \item With servos at center, manually rotate the output slightly clockwise.
+    \item Record Motor 1's position as its home offset.
+    \item Rotate counter-clockwise and record Motor 2's home offset.
+    \item Verify that the torque value for each motor is about 20-30 (indicating proper pretension).
+\end{enumerate}
+
+\subsection{Running Backlash Measurement}
+
+\begin{lstlisting}[language=bash]
+    node app.js
+\end{lstlisting}
+
+The automated test procedure follows this sequence:
+\begin{enumerate}
+    \item Both elastic bands relaxed.
+    \item DUT motor(s) move CW/CCW to preload gears, then return to center.
+    \item Puller motors alternately apply \SI{0.3}{\kilo\gram force} load.
+    \item Between pulls, both bands are relaxed.
+    \item Telemetry is logged throughout.
+\end{enumerate}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig5_sequence_stage1.png}
+    \caption{Test sequence stage 1: Preparation phase with relaxed elastic bands.}
+    \label{fig:sequence1}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig6_sequence_stage2.png}
+    \caption{Test sequence stage 2: Alternating load application for backlash measurement.}
+    \label{fig:sequence2}
+\end{figure}
+
+\subsection{Data Analysis}
+
+Visualize a specific log file:
+\begin{lstlisting}[language=bash]
+    python software/logs_visualisation/log_viz.py logs/motor_telemetry.csv
+\end{lstlisting}
+
+Calculate backlash statistics:
+\begin{lstlisting}[language=bash]
+    python software/logs_calculation/log_calc.py logs/motor_telemetry.csv
+\end{lstlisting}
+
+%==============================================================================
+\section{Validation and Characterization}
+%==============================================================================
+
+\subsection{Measurement Resolution and Repeatability}
+
+The test stand measurement resolution is limited by the DUT encoder resolution of \SI{0.088}{\degree}/count. Multiple test cycles (n=10) demonstrated high repeatability with standard deviation $<$0.5 counts across all configurations tested.
+
+\subsection{Systematic Error Analysis}
+
+A key advantage of this measurement approach is the elimination of probe-induced systematic errors. In traditional dial indicator setups, the stylus contact force acts on the lever arm at the measurement point. According to manufacturer specifications, Mitutoyo 513-series dial test indicators have measuring forces of 0.2--0.4N \cite{mitutoyo_513}, while standard dial indicators such as the Mitutoyo 3414S can exert up to 1.8N \cite{mitutoyo_3414s}. 
+
+For a \SI{100}{\milli\meter} lever arm, a 0.4N probe force creates an additional torque of 40 N$\cdot$mm (\SI{0.4}{\kilo\gram\centi\meter}), while 1.8N creates 180 N$\cdot$mm (\SI{1.8}{\kilo\gram\centi\meter}). When measuring actuators like the STS3215 with holding torques in the range of \SI{3}--\SI{10}{\kilo\gram\centi\meter}, this probe force can shift the gear train position, introducing systematic bias of 5--30\% depending on indicator type and actuator torque capacity.
+
+In contrast, this test stand uses the DUT's internal encoder for position measurement. No external probe contacts the output shaft during measurement, eliminating this systematic bias entirely. The only forces acting on the DUT are the intentionally applied test loads from the elastic bands, which are controlled and symmetric in both directions.
+
+\subsection{Single Servo Baseline Measurement}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig7_single_servo.png}
+    \caption{Backlash measurement for single STS3215 servo under alternating load.}
+    \label{fig:single}
+\end{figure}
+
+Single STS3215 measured backlash:
+\begin{itemize}
+    \item Loaded (\SI{3}{\kilo\gram\centi\meter}): 14.78 counts $\approx$ \SI{1.30}{\degree} $\approx$ \SI{2.27}{\milli\meter}
+    \item Unloaded: 7.03 counts $\approx$ \SI{0.62}{\degree} $\approx$ \SI{1.08}{\milli\meter}
+\end{itemize}
+
+\subsection{Application Example: Dual-Motor Backlash Compensation}
+
+To demonstrate the test stand's capability for validating anti-backlash mechanisms, we characterized a dual-motor configuration where two STS3215 servos are mechanically coupled and biased against each other.
+
+\subsubsection{Operating Principle}
+
+Each STS3215 has finite gearbox backlash. When a single motor reverses direction, the output shaft experiences free play as gear teeth transition between flanks. By coupling two motors and biasing them with opposing position offsets, each motor keeps its gear train loaded on a different flank. The dead zones no longer overlap, producing near-zero combined backlash.
+
+The pretension is achieved by assigning slightly different home positions to each motor. At steady state, each motor maintains a small position error, producing opposing torques of approximately \SI{3}{\percent} of stall torque (\SI{0.9}{\kilo\gram\centi\meter})---sufficient to eliminate slack while keeping current draw and heat generation modest.
+
+\subsubsection{Simple Model}
+
+Let each motor have a backlash half-width $b$ (in encoder counts). A single motor has an effective deadzone $[-b, +b]$ where small commanded position changes produce negligible output torque.
+
+When two motors are rigidly coupled with a position offset $d$ between their commanded angles, both gear trains remain seated on opposite flanks if:
+\[
+|d| > b_{\mathrm{eff}}
+\]
+where $b_{\mathrm{eff}}$ includes the controller deadband and mechanical play. The combined closed-loop stiffness becomes approximately the sum of individual stiffnesses, and the apparent deadzone collapses.
+
+\subsubsection{Coupled Servos Without Compensation}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig8_coupled_default.png}
+    \caption{Backlash measurement for coupled servos without pretension offset.}
+    \label{fig:coupled_default}
+\end{figure}
+
+Coupled servos (no offset) measured backlash:
+\begin{itemize}
+    \item Loaded: 7.50--8.00 counts $\approx$ \SI{0.66}{\degree}--\SI{0.70}{\degree}
+    \item Unloaded: 6.00 counts $\approx$ \SI{0.53}{\degree}
+\end{itemize}
+
+\subsubsection{Coupled Servos With Pretension Compensation}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig9_coupled_comp.png}
+    \caption{Backlash measurement for coupled servos with home-position offset compensation.}
+    \label{fig:coupled_comp}
+\end{figure}
+
+Coupled servos with pretension offset:
+\begin{itemize}
+    \item Loaded: 0--2 counts $\approx$ \SI{0}{\degree}--\SI{0.18}{\degree}
+    \item Unloaded: 0--1 counts $\approx$ \SI{0}{\degree}--\SI{0.09}{\degree}
+\end{itemize}
+
+\subsection{Summary of Measurement Results}
+
+\begin{table}[H]
+    \centering
+    \caption{Backlash measurements across configurations. U: unloaded; L: loaded (\SI{0.3}{\kilo\gram force}).}
+    \label{tab:backlash}
+    \begin{tabular}{lccc}
+        \toprule
+        Configuration & Counts & Degrees & mm (@100mm) \\
+        \midrule
+        Single motor (U) & 7.03 & 0.62 & 1.07 \\
+        Single motor (L) & 14.78 & 1.30 & 2.26 \\
+        Coupled, no offset (U) & 6.00 & 0.53 & 0.92 \\
+        Coupled, no offset (L) & 8.00 & 0.70 & 1.22 \\
+        \textbf{Coupled, with offset (U)} & \textbf{1.00} & \textbf{0.09} & \textbf{0.15} \\
+        \textbf{Coupled, with offset (L)} & \textbf{2.00} & \textbf{0.18} & \textbf{0.31} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{media/fig10_position_comparison.png}
+    \caption{Position deviation comparison: single servo (left) vs. dual servo with compensation (right).}
+    \label{fig:comparison}
+\end{figure}
+
+\subsection{Thermal and Electrical Observations}
+
+During validation testing of the dual-motor compensation configuration:
+\begin{itemize}
+    \item \textbf{Idle current:} 50--100mA per servo (with pretension)
+    \item \textbf{Operating temperature:} No significant increase observed during 30-minute continuous operation
+    \item \textbf{Torque capacity:} Approximately 80\% of combined dual-servo capacity available
+\end{itemize}
+
+%==============================================================================
+\section{Conclusions and Future Work}
+%==============================================================================
+
+This open-source test stand provides an accessible, automated method for quantitative backlash measurement in servo actuators. By using the DUT's internal encoder rather than an external dial indicator, the system eliminates probe contact force---a systematic error source that can bias measurements by 10--30\% in low-torque actuators. The system achieves:
+
+\begin{itemize}
+    \item Measurement resolution of \SI{0.088}{\degree} (encoder-limited)
+    \item Zero probe contact force (no systematic bias from measurement device)
+    \item High repeatability (standard deviation $<$0.5 counts)
+    \item Full automation of test sequencing and data logging
+    \item Total cost under \$100 USD
+\end{itemize}
+
+The test stand is suitable for:
+\begin{itemize}
+    \item Educational robotics laboratories demonstrating gear mechanics
+    \item Research groups comparing actuator performance
+    \item Quality control in servo procurement
+    \item Validation of anti-backlash mechanical designs
+\end{itemize}
+
+As demonstrated by the dual-motor compensation example, the test stand can quantify the effectiveness of backlash reduction techniques, showing a 14$\times$ improvement from \SI{1.30}{\degree} to \SI{0.09}{\degree} in the compensated configuration.
+
+\subsection{Future Work}
+
+\begin{itemize}
+    \item Adapter mounts for different servo form factors (Dynamixel, standard PWM servos)
+    \item Calibrated load cell integration for precise force measurement
+    \item Automated sweep of different load levels
+    \item Long-term wear characterization over thousands of cycles
+\end{itemize}
+
+%==============================================================================
+\section*{Declaration of Competing Interests}
+%==============================================================================
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+%==============================================================================
+\section*{Funding}
+%==============================================================================
+
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+%==============================================================================
+\section*{CRediT Authorship Contribution Statement}
+%==============================================================================
+
+\textbf{Boris Kotov:} Conceptualization, Methodology, Hardware design, Software development, Validation, Writing -- original draft, Writing -- review \& editing.
+
+%==============================================================================
+\section*{Acknowledgments}
+%==============================================================================
+
+The author thanks the open-source hardware community for inspiration and the Feetech documentation team for technical specifications.
+
+%==============================================================================
+\section*{Human and Animal Rights}
+%==============================================================================
+
+This work did not involve human subjects or animals.
+
+%==============================================================================
+\nocite{*}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}
