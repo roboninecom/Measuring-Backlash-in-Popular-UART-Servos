@@ -1,0 +1,26 @@
+{
+  "home_position": 2047,
+  "home_tolerance": 5,
+  "home_motor_ids": [1, 2],
+  "report_motor_ids": [1, 2],
+  "require_home_position_match": false,
+  "min_segment_samples": 10,
+  "actuated_motors": [
+    {
+      "motor_id": 3,
+      "label": "M3",
+      "relaxed_target": 1747,
+      "relaxed_tolerance": 4,
+      "stretched_target": 2247,
+      "stretched_tolerance": 100
+    },
+    {
+      "motor_id": 4,
+      "label": "M4",
+      "relaxed_target": 2347,
+      "relaxed_tolerance": 4,
+      "stretched_target": 1847,
+      "stretched_tolerance": 100
+    }
+  ]
+}

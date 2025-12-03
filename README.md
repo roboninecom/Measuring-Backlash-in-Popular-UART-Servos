@@ -21,12 +21,11 @@ The project demonstrates a practical method to eliminate mechanical backlash in 
 │   │   ├── package.json             # Node.js dependencies and scripts
 │   │   ├── sweepConfig.js           # Configuration for motion sequences
 │   │   └── TelemetryLogger.js       # Module for CSV data logging
-│   ├── logs_calculation/
-│   │   ├── log_calc.py              # Calculates backlash statistics
-│   │   ├── log_calc_single.py       # Single-file backlash calculation
-│   └── logs_visualisation/
-│       ├── log_viz.py               # Generates graphs from telemetry CSVs (batch)
-│       ├── log_viz_single.py        # Generates graphs from a single CSV
+│   ├── logs_analysis/
+│   │   ├── config/                  # Example config files
+│   │   ├── log_calc.py              # Calculates backlash statistics based on provided CSV log file
+│   |   ├── log_viz.py               # Generates visualisation from provided CSV log file
+│   |   ├── config_utils.py          # Some common utilities used by analysis and visualisation scripts
 ```
 
 ## 🛠 Hardware Requirements
@@ -71,25 +70,22 @@ node app.js
 *   Configuration for motion patterns and servo IDs is located in `sweepConfig.js`.
 *   Logs are automatically saved to the `logs/` directory.
 
-### 2. Data Analysis (Python)
-
-Python scripts are provided to parse the CSV logs, calculate effective backlash, and generate the plots used in the paper.
+### 2. Motor analysis utilities
 
 **Prerequisites:** Python 3.8+, pandas, matplotlib, numpy.
 
+`log_calc.py` handles motor-analysis scenario by reading a JSON configuration that describes which motors define the analysis phase window, which motors should be reported, and the stretched/relaxed targets for the actuated motors. 
+
+Run the script by passing the config and the log CSV:
+
 ```bash
-# Install required packages
-pip install pandas matplotlib numpy
+python logs_analysis/log_calc.py logs_analysis/config/config_m1_m2.json /path/to/log.csv
 ```
 
-**Visualizing Results:**
+`log_viz.py` uses the exact same config files to decide which motors to plot (from `report_motor_ids`) and which actuators provide the relaxed/stretched overlays. Invoke it the same way:
 
 ```bash
-# Visualize a specific log file
-python software/logs_visualisation/log_viz.py logs/motor_telemetry.csv
-
-# Calculate backlash statistics
-python software/logs_calculation/log_calc.py logs/motor_telemetry.csv
+python logs_analysis/log_viz.py logs_analysis/config/config_m1_m2.json  /path/to/log.csv
 ```
 
 ## 📄 Research Paper
