@@ -1,0 +1,815 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\sisetup{per-mode=symbol}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{caption}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{purple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% HardwareX formatting
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\title{A Low-Cost Platform for Measuring Backlash in Popular UART Servos}
+\author{Boris Kotov\textsuperscript{*}\\
+Robonine\\
+\texttt{boris.k@robonine.com}\\
+\url{https://robonine.com}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Backlash in compact servo actuators is a common source of positioning error in low-cost robotic and mechatronic systems. Measuring this backlash reliably is difficult because most servos include only a single output-shaft encoder, and conventional tools such as dial indicators can introduce enough probing force to distort the measurement.
+
+We present an open-source test stand that applies small, repeatable loads to a servo lever and measures the resulting displacement under both loaded and unloaded conditions. The stand uses low-cost components, 3D-printed fixtures, interchangeable levers, and a soft elastic coupling to apply controlled forces in opposite directions. Accompanying software coordinates the test sequence, records telemetry, and analyzes backlash using a consistent, repeatable methodology.
+
+We demonstrate how the platform can characterize single-servo and coupled-servo configurations, enabling direct comparison of mechanical performance and aiding actuator selection in design work. All CAD files, control software, and analysis tools are openly provided to support replication and further development.
+\end{abstract}
+
+\noindent\textbf{Keywords:} open-source hardware; backlash measurement; servo actuators; test stand; gear characterization; robotics; low-cost instrumentation; non-contact measurement
+
+%==============================================================================
+\section*{Specifications Table}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Hardware name} & Servo Backlash Measurement Test Stand \\
+\midrule
+\textbf{Subject area} & 
+\begin{minipage}[t]{10cm}
+\begin{itemize}
+    \item[$\bullet$] Engineering and material science
+    \item[$\bullet$] Educational tools and open source alternatives to existing infrastructure
+\end{itemize}
+\end{minipage} \\
+\midrule
+\textbf{Hardware type} & 
+\begin{minipage}[t]{10cm}
+\begin{itemize}
+    \item[$\bullet$] Mechanical engineering and materials science
+\end{itemize}
+\end{minipage} \\
+\midrule
+\textbf{Closest commercial analog} & \begin{minipage}[t]{10cm}Industrial gear measurement systems (Klingelnberg, Gleason, Mahr): \$3,500--\$100,000+; Double-flank gear rolling testers: \$750--\$16,500; Dial indicator setups: \$50--\$200. No direct low-cost commercial analog exists for automated servo actuator backlash measurement with zero probe contact force.\end{minipage} \\
+\midrule
+\textbf{Open source license} & 
+\begin{minipage}[t]{10cm}
+Hardware: CERN Open Hardware Licence Version 2 -- Permissive (CERN-OHL-P-2.0)\\
+Software: MIT License\\
+Documentation: CC BY 4.0
+\end{minipage} \\
+\midrule
+\textbf{Cost of hardware} & Approximately \$80--100 USD (complete test stand) \\
+\midrule
+\textbf{Source file repository} & \begin{minipage}[t]{10cm}DOI: [To be assigned upon Zenodo upload]\\
+Zenodo: \url{https://zenodo.org/record/XXXXXXX}\\
+(GitHub mirror: \url{https://github.com/roboninecom/Backlash-Compensation-in-STS3215-Servo-Actuators})\end{minipage} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%==============================================================================
+\section{Hardware in Context}
+%==============================================================================
+
+Low-cost servo motors have become a common choice in DIY robotics, hobby mechatronics, and education. UART-controlled servos—such as those from Feetech, Waveshare, and similar manufacturers—are especially popular because they offer digital configuration, compact size, and affordable pricing. Their simplicity makes them easy to integrate into small research setups and classroom projects.
+
+Despite these advantages, such servos have important limitations. Most notably, their geartrains introduce mechanical backlash, creating a region where changes in the commanded position do not immediately move the output shaft. Even a small amount of backlash can reduce positioning accuracy, degrade repeatability, or lead to oscillatory behavior. In addition, these servos typically include only a single encoder on the output shaft, so internal gear motion cannot be observed directly and must instead be inferred from output behavior.
+
+Backlash in small servos is often measured using a dial indicator at the lever tip. While convenient, this method introduces several sources of error. The indicator tip applies a small but non-negligible force, which can shift the output shaft and mask the true backlash. Friction in the indicator mechanism, inconsistent contact pressure, and difficulty keeping the lever aligned with the measurement axis add further uncertainty. In lightweight or compliant servos, the probing force may even be comparable to the internal holding torque, making readings unreliable.
+
+Users often try to improve performance by tuning PID parameters, adjusting acceleration or speed limits, or coupling two servos together to create a preloaded system. Although these strategies can reduce effective backlash, it is difficult to evaluate them in a repeatable way. Because each servo runs its own internal control loop, the observed behavior always combines mechanical properties with firmware decisions. Small changes in load, torque, or controller settings can produce results that are hard to interpret without a controlled test environment.
+
+These limitations highlight the need for a method that can apply small, repeatable, and well-controlled forces, in both directions, without disturbing the internal drivetrain in uncontrolled ways.
+
+To address this need, we developed an open-source test stand specifically for characterizing backlash and related behavior in UART servos. The stand uses inexpensive components—3D-printed structures, low-cost servos, elastic-band loading, and simple electronics—to create a controlled environment in which force, position, and motion sequences can be repeated reliably.
+
+The stand makes it possible to:
+
+\begin{itemize}
+    \item Apply calibrated forces in both clockwise and counter-clockwise directions
+    \item Measure how the servo responds under load and no-load conditions
+    \item Log detailed telemetry for offline analysis and visualization
+\end{itemize}
+
+All design files, test-controller software, and analysis scripts are openly available, allowing others to reproduce, adapt, or extend the system.
+
+By providing predictable loading and repeatable motion, the test stand offers a practical and accessible way to study backlash and evaluate performance improvements in low-cost UART servos.
+
+%==============================================================================
+\section{Hardware Description}
+%==============================================================================
+
+The test stand is designed to be simple, modular, and easy to reproduce. It can be configured to test either a single servo motor or two mechanically coupled servos. The mechanical system consists of a base plate, servo holders, 100 mm bracket levers, puller motors, the motor or motors under test, and elastic bands that provide a soft loading mechanism.
+
+\subsection{Mechanical Structure}
+
+\subsubsection{Base Plate}
+
+The base plate serves as the foundation of the stand. It is a flat, rigid surface without any predefined mounting patterns. Components are attached using clamps or fasteners, depending on the material and the required rigidity. This approach keeps the design flexible and allows users to adapt the layout to different test configurations. Materials such as acrylic, plywood, aluminum, or 3D-printed panels can all be used successfully.
+
+\subsubsection{Motor Holders}
+
+Motor holders are 3D-printed brackets used to secure the tested servo or servo pair. Two variants are available:
+
+\begin{itemize}
+    \item Single-motor holder for testing one servo.
+    \item Dual-motor holder for evaluating two servos coupled together.
+\end{itemize}
+
+Each holder keeps the servo body fixed in place while maintaining alignment with the puller motors and the force-application mechanism. The holders are designed for easy installation on the base plate using clamps or screws.
+
+\subsubsection{100 mm Bracket Levers}
+
+All servos in the stand—tested motors and puller motors—use 100 mm bracket levers. These levers attach to standard 25T servo horns mounted on both sides of the servo output shaft. Versions of the lever are provided for both single-servo and dual-servo configurations.
+
+The lever length of 100 mm provides sufficient motion amplification for measuring small deviations while keeping the applied torque within controllable limits. The levers are typically 3D-printed, but any sufficiently rigid material may be used.
+
+\subsubsection{Puller motors}
+
+Two puller motors apply controlled external forces to the tested motor or motors. These motors may be Feetech or Waveshare UART servos, and they are mounted in simple 3D-printed holders on the base plate. Each puller motor is fitted with its own 100 mm lever, aligned so that force can be applied cleanly to the lever of the tested servo.
+
+The puller motors do not participate in measurement. Their primary role is to generate repeatable clockwise and counter‑clockwise loading during the test sequence. However, their position data is still logged and later used by the analysis software to determine the active phase of the test (preload, loaded, or unloaded) and to correctly classify samples for backlash estimation.
+
+\subsubsection{Tested Motor(s)}
+
+The center of the stand holds either one tested servo or a pair of coupled servos. The tested servo(s) are mounted in the corresponding single- or dual-motor holder and fitted with a 100 mm lever. This lever serves  as the force-application point.
+
+Testing two coupled motors allows investigation of preload strategies, torque-sharing behavior, and the effects of coupling on backlash.
+
+\subsubsection{Elastic Bands for Soft Coupling}
+
+Elastic bands provide a soft and backlash-free connection between the puller motors and the tested motor lever. In the neutral position, the bands are almost fully relaxed. The puller motors rotate to a predefined angle to tension the bands and apply the desired force during the test.
+
+Using elastic bands as the coupling element prevents additional mechanical backlash from being introduced into the system and smooths transitions when the load direction changes. The applied force is calibrated before testing by measuring the pull at the lever tip, allowing different force levels to be used depending on whether a single motor or a coupled pair is being evaluated.
+
+\subsection{Electrical Integration}
+The electrical system of the test stand is based on a simple UART daisy‑chain network shared by all servos on the platform. This keeps wiring minimal and makes it easy to add or remove motors depending on whether a single‑servo or dual‑servo test configuration is being used.
+
+[fig] Connection diagram
+
+\subsubsection{Daisy‑Chain Servo Bus}
+
+All servos—puller motors and the tested motor or motors—are connected in a daisy‑chain manner using their UART ports. This creates a single shared communication bus with only three required lines:
+
+\begin{itemize}
+    \item VCC (typically 8.4 or 12 V, depending on servo model)
+    \item GND
+    \item UART signal (half‑duplex, TTL‑level)
+\end{itemize}
+
+This wiring style allows multiple servos to receive commands and report telemetry over the same physical link. Each servo uses a unique ID, making it possible to address and read them individually.
+
+\subsubsection{Power Delivery}
+
+The stand can be powered by a standard DC supply appropriate for the selected servo models (commonly 8.4 or 12 V for Feetech units). All servos draw from the same power rails, so the supply should be sized to handle peak current from the puller motors during load application as well as the tested motor.
+
+\subsubsection{USB-to-TTL Interface}
+
+A Feetech or Waveshare USB‑to‑TTL adapter connects the daisy‑chain bus to the host computer. The adapter presents a virtual serial port, allowing the test controller software to:
+
+\begin{itemize}
+    \item send position commands to each servo
+    \item read periodic telemetry
+    \item synchronize puller motor movements with the measurement sequence
+\end{itemize}
+
+The adapter typically supports 1 Mbps communication, which is sufficient for streaming telemetry from several servos while issuing commands during the test.
+
+\subsubsection{Host Controller}
+
+A PC, laptop, or single‑board computer (e.g., Raspberry Pi) runs the test controller software. It is responsible for:
+
+\begin{itemize}
+    \item coordinating puller‑motor actuation
+    \item executing preload and force‑application sequences
+    \item recording telemetry
+\end{itemize}
+
+This simple electrical architecture keeps the system compact while allowing full control over all motors and reliable acquisition of test data.
+
+\subsection{Software}
+The software stack coordinates the full test workflow: it drives the servos, manages the motion sequence, records telemetry, and provides tools for analysis and visualization. The system is intentionally lightweight and runs on a standard PC or single‑board computer through a simple USB‑to‑TTL connection. All components are open source and designed for easy modification.
+
+\subsubsection{Test Controller}
+
+The test controller is a Node.js application that communicates with all servos over the shared UART bus and executes the predefined motion sequence. Its main responsibilities include:
+
+\begin{itemize}
+    \item Test sequencing – Running the preload motion, applying calibrated tension through the puller motors, alternating between clockwise and counter‑clockwise pulls, and relaxing the load between phases.
+    \item Synchronized control – Ensuring all motors execute their portion of the sequence in a coordinated and repeatable manner.
+    \item Telemetry logging – Continuously collecting status data from each servo during the full test cycle.
+\end{itemize}
+
+The controller is modular, making it straightforward to adjust timing, introduce new test routines, or experiment with alternative loading strategies.
+
+\subsubsection{Telemetry Logging}
+
+During operation, each servo reports its state at regular intervals. The controller collects these packets and stores them in CSV format. Typical fields include:
+
+\begin{itemize}
+    \item Timestamp
+    \item Servo ID
+    \item Target (commanded) position
+    \item Actual encoder position
+    \item Estimated load/torque
+    \item Motor current
+    \item Supply voltage
+\end{itemize}
+
+The default logging rate is around 10 Hz but can be increased or decreased depending on test conditions. These data form the basis for quantifying backlash, tracking positional deviations, and evaluating servo behavior under varying loads.
+
+\subsubsection{Analysis Tools}
+
+A Python script is provided for processing and interpreting the recorded telemetry. Its core functions include:
+
+\begin{itemize}
+    \item Phase detection – Using puller‑motor positions to identify preload, loaded, and unloaded intervals.
+    \item Position‑deviation analysis – Comparing target and actual positions under different loading conditions.
+    \item Backlash estimation – Extracting CW and CCW reference points to compute effective backlash.
+    \item Averaging and statistics – Aggregating multiple cycles to obtain stable, repeatable measurements.
+\end{itemize}
+
+The output includes numerical summaries and intermediate datasets suitable for further study or comparison across servos and parameter settings.
+
+\subsubsection{Visualization Tools}
+
+A dedicated visualization script converts processed data into clear, publication‑ready charts. It produces plots such as:
+
+\begin{itemize}
+    \item Encoder position vs time
+    \item Target position vs time
+    \item Highlighted loaded and unloaded phases
+\end{itemize}
+
+These visualizations make it easier to interpret servo behavior, observe how different configurations influence performance, and communicate results effectively.
+
+\subsection{Geometric and Force Relationships}
+
+For this stand, it is useful to relate three quantities:
+\begin{itemize}
+    \item Angular motion at the servo shaft,
+    \item Linear displacement at the lever tip,
+    \item Torque applied by a known force at the lever tip.
+\end{itemize}
+
+\subsubsection{Lever tip displacement and angular backlash}
+
+For a lever of length $r$ and a small angular change $\Delta\theta$, the linear displacement $\Delta s$ at the tip is approximately
+\begin{equation*}
+    \Delta s \approx r \,\Delta\theta,
+\end{equation*}
+where $r$ is in metres and $\Delta\theta$ is in radians.
+
+Using degrees is often more practical. With
+\begin{equation*}
+    \Delta\theta_{\text{rad}} = \Delta\theta_{\text{deg}} \cdot \frac{\pi}{180},
+\end{equation*}
+we obtain
+\begin{equation*}
+    \Delta s = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{deg}}.
+\end{equation*}
+
+A typical UART hobby servo uses a 12-bit output encoder with a resolution of 4096 counts per revolution. This corresponds to an angular step size of
+\begin{equation*}
+    \Delta\theta_{\text{enc}} = \frac{360^\circ}{4096} \approx 0.088^\circ \text{ per count}.
+\end{equation*}
+For the 100\,mm lever used in our test stand ($r = 0.1\,\text{m}$), this angular increment translates to a linear displacement at the lever tip of
+\begin{equation*}
+    \Delta s_{\text{enc}} = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{enc}} \approx 0.153\,\text{mm per count}.
+\end{equation*}
+These values define the smallest position change that can be observed directly from the servo’s reported encoder position and therefore set a practical lower bound on the backlash that can be reliably resolved with this measurement method.
+
+This provides a simple way to interpret encoder-based backlash (in degrees or encoder steps) as physical motion at the end of the lever.
+
+\subsubsection{Force at the lever tip and torque at the shaft}
+
+The torque $\tau$ at the servo shaft is the product of the force $F$ at the lever tip and the lever arm length $r$:
+\begin{equation*}
+    \tau = F \cdot r.
+\end{equation*}
+
+If the force is measured with a small scale in kilogram-force (kgf) and the lever length is expressed in centimetres, the torque in kg$\cdot$cm is
+\begin{equation*}
+    \tau_{\text{kg$\cdot$cm}} \approx F_{\text{kgf}} \cdot r_{\text{cm}}.
+\end{equation*}
+
+As an example, for a 100\,mm (10\,cm) lever and a measured pull of 0.15\,kg at the tip:
+\begin{equation*}
+    \tau_{\text{kg$\cdot$cm}} \approx 0.15 \times 10 = 1.5\,\text{kg$\cdot$cm}.
+\end{equation*}
+
+In SI units this is approximately $0.147\,\text{N$\cdot$m}$. This relationship makes it straightforward to calibrate different load levels by adjusting either the lever length, the band tension, or both.
+
+
+%==============================================================================
+\section{Design Files Summary}
+%==============================================================================
+
+\begin{table}[H]
+\centering
+\caption{Project file structure overview.}
+\label{tab:designfiles}
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{File name} & \textbf{File type} & \textbf{License} & \textbf{Location} \\
+\midrule
+\multicolumn{4}{l}{\textit{Test Stand Mechanical Components}} \\
+\midrule
+servo\_holder\_single.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+servo\_holder\_single.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_single.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_single.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+servo\_holder\_dual.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+servo\_holder\_dual.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_dual.step & CAD (STEP) & CERN-OHL-P & /cad/ \\
+test\_lever\_100mm\_dual.stl & 3D Print (STL) & CERN-OHL-P & /cad/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Software -- Test Control and Data Acquisition}} \\
+\midrule
+app.js & Node.js application & MIT & /software/backlash\_test/ \\
+config.js & Node.js module & MIT & /software/backlash\_test/ \\
+sweepConfig.js & Node.js module & MIT & /software/backlash\_test/ \\
+TelemetryLogger.js & Node.js module & MIT & /software/backlash\_test/ \\
+package.json & Build configuration & MIT & /software/backlash\_test/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Software -- Data Analysis and Visualization}} \\
+\midrule
+config/ & Example config files & -- & /software/logs\_analysis/ \\
+config\_utils.py & Python script & MIT & /software/logs\_analysis/ \\
+log\_calc.py & Python script & MIT & /software/logs\_analysis/ \\
+log\_viz.py & Python script & MIT & /software/logs\_analysis/ \\
+\midrule
+\multicolumn{4}{l}{\textit{Project Data and Documentation}} \\
+\midrule
+logs/ & Telemetry CSV output & -- & /logs/ \\
+paper/ & LaTeX source files & -- & /paper/ \\
+README.md & Project documentation & MIT & / \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%==============================================================================
+\section{Bill of Materials}
+%==============================================================================
+
+\subsection{Test Stand Core (Loading System)}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for test stand loading system.}
+\label{tab:bom_teststand}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Puller motors & 2 & \$18.00 & \$36.00 & AliExpress \\
+Servo holder bracket & 3D printed, PLA & 2 & \$2.00 & \$4.00 & Self-printed \\
+Test lever (100mm) & 3D printed, PLA & 2 & \$0.50 & \$1.00 & Self-printed \\
+Elastic bands & Rubber, 100mm & 2 & \$0.50 & \$1.00 & Office supply \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$42.00} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Control Electronics}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for control electronics.}
+\label{tab:bom_electronics}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+USB-TTL adapter & Waveshare or Feetech USB-TTL & 1 & \$5.00 & \$5.00 & AliExpress \\
+12V power supply & 2A minimum, DC barrel & 1 & \$8.00 & \$8.00 & Amazon \\
+Servo cable & 3-pin, 200mm & 4 & \$0.50 & \$2.00 & Included \\
+Jumper wires & Female-female, 100mm & 4 & \$0.10 & \$0.40 & Electronics store \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$15.40} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Single Servo DUT (device under test) Configuration}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for single servo DUT.}
+\label{tab:bom_single}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Device under test & 1 & \$18.00 & \$18.00 & AliExpress \\
+Servo holder bracket & 3D printed, PLA/PETG & 1 & \$2.00 & \$2.00 & Self-printed \\
+Test lever (100mm) & 3D printed, PLA & 1 & \$0.50 & \$0.50 & Self-printed \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$20.50} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dual Servo DUT (device under test) Configuration}
+
+\begin{table}[H]
+\centering
+\caption{Bill of materials for dual servo DUT (anti-backlash configuration).}
+\label{tab:bom_dual}
+\small
+\begin{tabular}{llcrrl}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Qty} & \textbf{Unit Cost} & \textbf{Total} & \textbf{Source} \\
+\midrule
+Feetech STS3215 & Devices under test & 2 & \$18.00 & \$36.00 & AliExpress \\
+Servo holder bracket & 3D printed, PLA/PETG & 1 & \$2.00 & \$2.00 & Self-printed \\
+Shaft coupler bracket & 3D printed, PLA/PETG & 1 & \$1.50 & \$1.50 & Self-printed \\
+Mounting plate & 3D printed, PLA/PETG & 1 & \$1.50 & \$1.50 & Self-printed \\
+Test lever (100mm) & 3D printed, PLA & 1 & \$0.50 & \$0.50 & Self-printed \\
+M3$\times$10 screw & Stainless steel & 8 & \$0.10 & \$0.80 & Hardware store \\
+M3$\times$16 screw & Stainless steel & 4 & \$0.12 & \$0.48 & Hardware store \\
+M3 hex nut & Stainless steel & 4 & \$0.05 & \$0.20 & Hardware store \\
+\midrule
+\multicolumn{4}{r}{\textbf{Subtotal}} & \textbf{\$42.98} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{1em}
+\noindent\textbf{Total Cost Summary:}
+\begin{itemize}
+    \item Test stand + electronics (base system): \textbf{\$57.40}
+    \item With single servo DUT: \textbf{\$75.90}
+    \item With dual servo DUT: \textbf{\$98.38}
+\end{itemize}
+
+%==============================================================================
+\section{Build Instructions}
+%==============================================================================
+
+Most UART servos used in this stand (e.g., Feetech, Waveshare) are supplied with the basic hardware required for assembly. These typically include:
+
+\begin{itemize}
+    \item 25T output disks (horns) used for attaching levers
+    \item Thread-cutting screws for securing the servo body inside holders
+    \item M3 screws for fastening 25T disks and levers to the output shaft
+    \item Daisy‑chain cables for linking multiple servos on the shared UART bus
+\end{itemize}
+
+In addition, the stand uses several 3D-printed parts, including servo holders, 100 mm levers, and optional base-plate fixtures. STL files for all printed components are provided. Parts can be printed on a standard FDM printer using common materials such as PLA or PETG; moderate infill (e.g., 30–40\%) is sufficient for typical loads.
+
+The test stand is designed so that all major assembly steps—mounting servos in holders, attaching levers, and wiring—use only the screws and cables provided with the servos. No special fasteners are required except for those used to attach holders to the base plate and to secure elastic bands at the lever tips.
+
+Basic assembly requires only standard hand tools, such as a small Phillips screwdriver, hex keys for M3 hardware, and optionally clamps for fixing holders to the base plate. A small digital scale is recommended for calibrating the elastic-band force but is not needed for basic mechanical assembly.
+
+\subsection{Servo ID Assignment (Required Before Assembly)}
+
+Each servo must be assigned a unique ID before installation. This is done using the Feetech configuration utility FD 1.9.8.2.
+
+\begin{enumerate}
+    \item Connect a single servo to the USB–TTL UART board using one of its UART ports.
+    \item Connect the power supply to the UART board, then connect the board to the PC via USB.
+    \item Open FD 1.9.8.2, select the correct COM port and baud rate (typically 1,000,000 bps for Feetech UART servos).
+    \item Click Scan to detect the connected servo.
+    \item Open the Programming tab, assign a new servo ID, and save the settings.
+\end{enumerate}
+
+Repeat this process for each servo (puller servos and tested servo(s)) to ensure all IDs are unique before assembling the test stand.
+
+\subsection{Install the Puller Servos}
+
+Before securing the servos, attach the 25T output disks (horns) to each puller servo.
+
+\begin{enumerate}
+    \item Place both puller servos into their 3D‑printed holders.
+    \item Secure each servo using the thread‑cutting screws supplied with the servos.
+    \item Attach a 100 mm lever to each puller motor using the M3×5 screws that come with the servos. Ensure each lever is firmly seated on the 25T horn.
+\end{enumerate}
+
+\subsection{Install the Tested Servo(s)}
+
+The stand supports either a single tested servo or two coupled servos.
+
+Before placing the servos into the holders, attach the 25T output disks (horns) to each tested servo.
+
+\begin{enumerate}
+    \item Place the tested servo(s) into the appropriate single or dual holder.
+    \item Secure the servo(s) using the provided thread‑cutting screws.
+    \item Attach the 100 mm lever (single or coupled version) to the output shaft(s).
+    \item Tighten the lever screws using the M3×5 servo‑supplied screws.
+\end{enumerate}
+
+\subsection{Mount the Tested Servo Assembly}
+
+\begin{enumerate}
+    \item Position the tested‑servo holder in the center of the base plate.
+    \item Attach the holder using clamps or appropriate fasteners, depending on the base‑plate material.
+\end{enumerate}
+
+Verify that the lever is roughly vertical—this is the neutral (home) position.
+
+\subsection{Attach Elastic Bands}
+
+\begin{enumerate}
+    \item Hook elastic bands between the puller‑motor levers and the tested‑motor lever.
+    \item Secure each band using washers and M3×8 screws.
+\end{enumerate}
+
+\subsection{Mount the Puller Servos on the Base Plate}
+
+\begin{enumerate}
+    \item Position the puller‑servo holders on both sides of the tested servo assembly.
+    \item Adjust the distance so that the elastic bands run in straight lines and remain only lightly tensioned at neutral (vertical lever position).
+    \item Secure the puller‑servo holders using clamps or fasteners.
+\end{enumerate}
+
+\subsection{Connect the Servos Electrically}
+
+\begin{enumerate}
+    \item Daisy‑chain the servos using the supplied cables.  Each servo has two identical UART ports.  There is no In/Out distinction; connect any port to the next servo.
+    \item Connect one of the servos (typically a puller motor) to the USB‑TTL adapter.
+\end{enumerate}
+
+\subsection{Power and Computer Connection}
+
+\begin{enumerate}
+    \item Connect the power supply to the USB‑TTL adapter.
+    \item Connect the USB‑TTL adapter to your PC using the provided USB cable.
+\end{enumerate}
+
+\subsection{Calibration}
+
+Calibration ensures that all servos start from a consistent neutral (middle) position before running any tests.
+
+\begin{enumerate}
+    \item Open the Feetech Utility (FD 1.9.8.2).
+    \item Select the appropriate COM port, set the baud rate (typically 1,000,000 bps), and click Connect.
+    \item Click Scan to detect all connected servos on the UART bus.
+    \item For each servo:
+    \begin{itemize}
+        \item Manually rotate each servo’s lever so it is in the vertical (neutral) position.
+        \item Open the Programming tab and Click Offset
+    \end{itemize}
+\end{enumerate}
+
+After calibration, the stand is ready for running the automated test sequence.
+
+
+%==============================================================================
+\section{Operation Instructions}
+%==============================================================================
+
+\subsection{Software Installation}
+
+The test controller is located in the repository under:
+
+\begin{verbatim}
+    /software/backlash_test
+\end{verbatim}
+
+The controller is a Node.js application and requires Node.js and npm to be installed on the host computer.
+
+\begin{enumerate}
+    \item Install Node.js (version 18 or later recommended).
+    \item Install npm (included with most Node.js distributions).
+    \item Open a terminal and navigate to the test controller directory:
+    
+    \begin{lstlisting}[language=bash]
+    cd software/backlash_test
+    \end{lstlisting}
+
+    \item Install all required dependencies:
+    
+    \begin{lstlisting}[language=bash]
+    npm install
+    \end{lstlisting}
+\end{enumerate}
+
+\subsection{Configuration}
+
+Put hardware configuration, such as Serial port address and baud rate in \textbf{.env }file:
+
+\begin{verbatim}
+    SERIAL_PORT=COM3            # or /dev/your_com_port on Mac/Linux
+    SERIAL_BAUD_RATE=1000000    # default baud rate
+    SERIAL_TIMEOUT=5000         # in milliseconds
+
+    LOG_FILE_PATH=logs/motor_telemetry.csv
+\end{verbatim}
+
+Test behavior is controlled through the configuration file:
+
+sweepConfig.js
+
+In this file, you can adjust:
+
+\begin{itemize}
+    \item Servo IDs (tested servos and puller servos)
+    \item Motion positions (neutral, preload, pull distances)
+    \item Timing parameters (delays, cycle durations, settling times)
+    \item Speed and acceleration for both tested motors and pull motors
+\end{itemize}
+
+These values must match your mechanical setup and desired test conditions. For example, ensure that:
+
+\begin{itemize}
+    \item Motor IDs correspond to the IDs assigned during calibration.
+    \item Puller motors are given appropriate acceleration so that they tension elastic bands smoothly.
+    \item Tested motors use safe speed limits to avoid overshoot.
+\end{itemize}
+
+\subsection{Default Motion Sequence}
+
+The default configuration assumes:
+
+Motors 1 and 2 — tested servo(s)
+Motors 3 and 4 — puller motors
+
+The primary motor(s) executes a short back-and-forth movement to preload its internal gears either CW or CCW. Once loaded, the opposing motors alternately pull the lever in opposite directions. Between each pull, they briefly release tension to ensure that no residual force biases the measurement.
+
+\subsection{Running the Test Controller}
+
+Once configuration is complete, the controller can be started with:
+
+\begin{lstlisting}[language=bash]
+    node app.js
+\end{lstlisting}
+
+Log file will be saved automatically under
+\begin{verbatim}
+LOG_FILE_PATH
+\end{verbatim}
+
+if configured in \textbf{.env} or default log path at 
+\begin{verbatim}
+logs/motor_telemetry.csv
+\end{verbatim}
+
+\subsection{Python Log-Analysis Tools}
+
+Additional analysis and visualization tools are provided in:
+
+\begin{verbatim}
+/software/log_analysis
+\end{verbatim}
+
+These scripts require standard Python scientific libraries (e.g., NumPy, Pandas, Matplotlib). Using a virtual environment is recommended but optional.
+
+A minimal dependency installation can be done with:
+
+\begin{lstlisting}[language=bash]
+    pip install numpy pandas plotly
+\end{lstlisting}
+
+These scripts process the CSV logs produced by the controller, compute backlash-related metrics, and generate visualizations for further interpretation.
+
+\subsection{Log-Analysis Workflow}
+
+Two main Python tools are provided for analyzing backlash and visualizing results: \textbf{log\_calc.py} and \textbf{log\_viz.py}.
+
+\subsubsection{log\_calc.py — Backlash analysis}
+
+log\_calc.py processes a log CSV together with a JSON configuration file. The configuration specifies:
+
+\begin{itemize}
+    \item Which motors define the analysis-phase window (e.g., puller-motor positions)
+    \item Which motors should appear in the output report
+    \item Reference encoder values for home, loaded, and unloaded states
+    \item Motor IDs for both tested and puller servos
+    \item Expected relaxed / stretched positions for force-application events
+\end{itemize}
+
+Run the script as follows:
+
+\begin{lstlisting}[language=bash]
+    cd log_analysis
+    python log_calc.py config/config_m1_m2.json /path/to/log.csv
+\end{lstlisting}
+
+The script outputs numerical measurements such as effective backlash, loaded/unloaded offsets, and statistical summaries.
+
+\subsubsection{log\_viz.py — Visualization Tool}
+
+log\_viz.py uses the same JSON configuration files. It reads the log and generates interactive Plotly-based visualizations.
+
+It uses:
+
+\begin{itemize}
+    \item report\_motor\_ids to decide which motors to plot
+    \item Puller-motor activity to overlay relaxed and stretched intervals
+    \item Reference positions to highlight important transitions
+\end{itemize}
+
+Run it the same way:
+
+\begin{lstlisting}[language=bash]
+    cd log_analysis
+    python log_viz.py config/config_m1_m2.json /path/to/log.csv
+\end{lstlisting}
+
+\subsubsection{Configuration Files}
+
+All configuration files are stored in:
+
+\begin{verbatim}
+/software/log_analysis/config
+\end{verbatim}
+
+Each JSON file can define:
+
+\begin{itemize}
+    \item Motor IDs (tested motors, puller motors)
+    \item Reference positions for home, loaded, and unloaded states
+    \item Analysis-window parameters
+    \item Reporting options
+\end{itemize}
+
+These configs allow a single log-analysis workflow to support different test setups (single motor, dual motors, different loading strategies).
+
+%==============================================================================
+\section{Validation and Characterization}
+%==============================================================================
+
+%==============================================================================
+\section*{Declaration of Competing Interests}
+%==============================================================================
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+%==============================================================================
+\section*{Funding}
+%==============================================================================
+
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+%==============================================================================
+\section*{CRediT Authorship Contribution Statement}
+%==============================================================================
+
+\textbf{Boris Kotov:} Conceptualization, Methodology, Hardware design, Software development, Validation, Writing -- original draft, Writing -- review \& editing.
+
+%==============================================================================
+\section*{Acknowledgments}
+%==============================================================================
+
+The author thanks the open-source hardware community for inspiration and the Feetech documentation team for technical specifications.
+
+%==============================================================================
+\section*{Human and Animal Rights}
+%==============================================================================
+
+This work did not involve human subjects or animals.
+
+%==============================================================================
+\nocite{*}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}
