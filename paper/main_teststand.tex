@@ -15,6 +15,7 @@
 \usepackage{float}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{placeins}
 
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codegreen}{rgb}{0,0.6,0}
@@ -142,6 +143,13 @@ By providing predictable loading and repeatable motion, the test stand offers a 
 
 The test stand is designed to be simple, modular, and easy to reproduce. It can be configured to test either a single servo motor or two mechanically coupled servos. The mechanical system consists of a base plate, servo holders, 100 mm bracket levers, puller motors, the motor or motors under test, and elastic bands that provide a soft loading mechanism.
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{media_stand/teststand_combined.png}
+    \caption{Test stand setup for testing two servos coupled via common bracket lever}
+    \label{fig:teststand}
+\end{figure}
+
 \subsection{Mechanical Structure}
 
 \subsubsection{Base Plate}
@@ -157,13 +165,29 @@ Motor holders are 3D-printed brackets used to secure the tested servo or servo p
     \item Dual-motor holder for evaluating two servos coupled together.
 \end{itemize}
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.5\linewidth]{media_stand/servo_holder_x2.png}
+    \caption{Two STS3215 servos mounted in the holder}
+    \label{fig:servo_holder_x2}
+\end{figure}
+
 Each holder keeps the servo body fixed in place while maintaining alignment with the puller motors and the force-application mechanism. The holders are designed for easy installation on the base plate using clamps or screws.
 
 \subsubsection{100 mm Bracket Levers}
 
 All servos in the stand—tested motors and puller motors—use 100 mm bracket levers. These levers attach to standard 25T servo horns mounted on both sides of the servo output shaft. Versions of the lever are provided for both single-servo and dual-servo configurations.
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.5\linewidth]{media_stand/bracket_lever_x2.png}
+    \caption{Two STS3215 servos coupled via common bracket lever}
+    \label{fig:bracket_lever_x2}
+\end{figure}
+
 The lever length of 100 mm provides sufficient motion amplification for measuring small deviations while keeping the applied torque within controllable limits. The levers are typically 3D-printed, but any sufficiently rigid material may be used.
+
+\FloatBarrier
 
 \subsubsection{Puller motors}
 
@@ -177,6 +201,15 @@ The center of the stand holds either one tested servo or a pair of coupled servo
 
 Testing two coupled motors allows investigation of preload strategies, torque-sharing behavior, and the effects of coupling on backlash.
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{media_stand/test_setup.png}
+    \caption{Example test setup. The center motor is holding its position, while the left motor is pulling the lever. At the same time, the right pulling motor is relaxed and does not apply any force.}
+    \label{fig:test_setup}
+\end{figure}
+
+\FloatBarrier
+
 \subsubsection{Elastic Bands for Soft Coupling}
 
 Elastic bands provide a soft and backlash-free connection between the puller motors and the tested motor lever. In the neutral position, the bands are almost fully relaxed. The puller motors rotate to a predefined angle to tension the bands and apply the desired force during the test.
@@ -186,23 +219,28 @@ Using elastic bands as the coupling element prevents additional mechanical backl
 \subsection{Electrical Integration}
 The electrical system of the test stand is based on a simple UART daisy‑chain network shared by all servos on the platform. This keeps wiring minimal and makes it easy to add or remove motors depending on whether a single‑servo or dual‑servo test configuration is being used.
 
-[fig] Connection diagram
-
 \subsubsection{Daisy‑Chain Servo Bus}
 
 All servos—puller motors and the tested motor or motors—are connected in a daisy‑chain manner using their UART ports. This creates a single shared communication bus with only three required lines:
 
 \begin{itemize}
-    \item VCC (typically 8.4 or 12 V, depending on servo model)
+    \item VCC (typically 7.4 or 12 V, depending on servo model)
     \item GND
     \item UART signal (half‑duplex, TTL‑level)
 \end{itemize}
 
 This wiring style allows multiple servos to receive commands and report telemetry over the same physical link. Each servo uses a unique ID, making it possible to address and read them individually.
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.5\linewidth]{media_stand/connection_diagram.png}
+    \caption{Typical connection of 4 UART servos to USB-TTL board}
+    \label{fig:connection_diagram}
+\end{figure}
+
 \subsubsection{Power Delivery}
 
-The stand can be powered by a standard DC supply appropriate for the selected servo models (commonly 8.4 or 12 V for Feetech units). All servos draw from the same power rails, so the supply should be sized to handle peak current from the puller motors during load application as well as the tested motor.
+The stand can be powered by a standard DC supply appropriate for the selected servo models (commonly 7.4 or 12 V for Feetech units). All servos draw from the same power rails, so the supply should be sized to handle peak current from the puller motors during load application as well as the tested motor.
 
 \subsubsection{USB-to-TTL Interface}
 
@@ -215,6 +253,8 @@ A Feetech or Waveshare USB‑to‑TTL adapter connects the daisy‑chain bus to 
 \end{itemize}
 
 The adapter typically supports 1 Mbps communication, which is sufficient for streaming telemetry from several servos while issuing commands during the test.
+
+\FloatBarrier
 
 \subsubsection{Host Controller}
 
@@ -588,6 +628,13 @@ Verify that the lever is roughly vertical—this is the neutral (home) position.
 
 Calibration ensures that all servos start from a consistent neutral (middle) position before running any tests.
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.8\linewidth]{media_stand/calibration.png}
+    \caption{Feetech configuration utility}
+    \label{fig:calibration}
+\end{figure}
+
 \begin{enumerate}
     \item Open the Feetech Utility (FD 1.9.8.2).
     \item Select the appropriate COM port, set the baud rate (typically 1,000,000 bps), and click Connect.
@@ -601,6 +648,7 @@ Calibration ensures that all servos start from a consistent neutral (middle) pos
 
 After calibration, the stand is ready for running the automated test sequence.
 
+\FloatBarrier
 
 %==============================================================================
 \section{Operation Instructions}
@@ -672,7 +720,23 @@ The default configuration assumes:
 Motors 1 and 2 — tested servo(s)
 Motors 3 and 4 — puller motors
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{media_stand/sequence_stage1.png}
+    \caption{Test sequence, stage 1: preparation. Both pull elastic bands are relaxed. The tested motor(s) moves in CW or CCW direction and returns back in center position. This causes motor gears to preload}
+    \label{fig:sequence_stage1}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{media_stand/sequence_stage2.png}
+    \caption{Test sequence, stage 2: stress. The tested motor(s) lever remains in the central position. The pull motors alternately pull the tested motor(s) lever in opposite directions. Between pulls, both elastic bands are relaxed.}
+    \label{fig:sequence_stage2}
+\end{figure}
+
 The primary motor(s) executes a short back-and-forth movement to preload its internal gears either CW or CCW. Once loaded, the opposing motors alternately pull the lever in opposite directions. Between each pull, they briefly release tension to ensure that no residual force biases the measurement.
+
+\FloatBarrier
 
 \subsection{Running the Test Controller}
 
