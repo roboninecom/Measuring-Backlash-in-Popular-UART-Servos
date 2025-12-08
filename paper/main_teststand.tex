@@ -133,9 +133,52 @@ The stand makes it possible to:
     \item Log detailed telemetry for offline analysis and visualization
 \end{itemize}
 
+\subsection{Hardware overview}
+
+The test stand consists of:
+\begin{enumerate}
+    \item \textbf{Loading system:} Two STS3215 puller motors with elastic band coupling for controlled force application
+    \item \textbf{Device Under Test (DUT) mount:} 3D-printed holder brackets for single or dual servo configurations
+    \item \textbf{Lever arms:} 100mm test levers for force transmission
+    \item \textbf{Control software:} Node.js application for automated test sequencing and telemetry logging
+    \item \textbf{Analysis software:} Python scripts for data visualization and backlash calculation
+\end{enumerate}
+
 All design files, test-controller software, and analysis scripts are openly available, allowing others to reproduce, adapt, or extend the system.
 
 By providing predictable loading and repeatable motion, the test stand offers a practical and accessible way to study backlash and evaluate performance improvements in low-cost UART servos.
+
+\subsection{Comparison with Existing Methods}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of backlash measurement approaches.}
+\label{tab:comparison}
+\small
+\begin{tabular}{lllll}
+\toprule
+\textbf{Method} & \textbf{Cost} & \textbf{Resolution} & \textbf{Probe Force} & \textbf{Automation} \\
+\midrule
+\multicolumn{5}{l}{\textit{Industrial gear measurement systems}} \\
+\quad Klingelnberg P26 (used) \cite{klingelnberg_p26} & \$3,500+ & $<$\SI{0.01}{\degree} & None & Full \\
+\quad Gleason GMS series \cite{gleason_gms} & \$20,000+ & $<$\SI{0.01}{\degree} & None & Full \\
+\quad Mahr gear measuring (used) \cite{mahr_mx4} & \$22,000+ & $<$\SI{0.01}{\degree} & None & Full \\
+\midrule
+\multicolumn{5}{l}{\textit{Double-flank gear rolling testers}} \\
+\quad Manual gear roll tester \cite{gear_roll_ebay} & \$750--2,150 & \SI{1}{\micro\meter}\textsuperscript{a} & None & None \\
+\quad Motorized gear roll tester \cite{kudale_gear_tester} & \$16,000+ & \SI{1}{\micro\meter}\textsuperscript{a} & None & Full \\
+\midrule
+\multicolumn{5}{l}{\textit{Dial indicator methods}} \\
+\quad Mitutoyo 513-series \cite{mitutoyo_513} & \$50--150 & \SI{0.01}{\milli\meter} & 0.2--0.4N & None \\
+\quad Mitutoyo 3414S \cite{mitutoyo_3414s} & \$80--200 & \SI{0.01}{\milli\meter} & 1.8N max & None \\
+\midrule
+\textbf{This work} & \$80--100 & \SI{0.09}{\degree}\textsuperscript{b} & \textbf{None} & Full \\
+\bottomrule
+\end{tabular}
+\vspace{0.5em}
+
+\footnotesize{\textsuperscript{a}Linear resolution; angular resolution depends on gear geometry. \textsuperscript{b}Limited by servo encoder resolution (12-bit, 4096 counts/rev).}
+\end{table}
 
 %==============================================================================
 \section{Hardware Description}
@@ -837,9 +880,157 @@ Each JSON file can define:
 
 These configs allow a single log-analysis workflow to support different test setups (single motor, dual motors, different loading strategies).
 
+
 %==============================================================================
 \section{Validation and Characterization}
 %==============================================================================
+
+To validate the test stand and demonstrate its ability to quantify backlash behavior, we evaluated several UART servo configurations commonly used in our projects. The tested units included:
+
+\begin{itemize}
+    \item STS3215 (single-servo configuration)
+    \item STS3215 (dual-servo coupled configuration)
+    \item STS3250 (single-servo configuration)
+\end{itemize}
+
+\subsection{Backlash measurement procedure}
+
+As part of each test, a sequence of motions is executed according to the Force application sequence described above. During this sequence, motor telemetry (including each servo current position and target position)  is sampled at approximately 10 Hz rate.
+
+For each pull direction (CW and CCW), two reference points are extracted from the telemetry stream:
+
+\paragraph{Unloaded (relaxed) state:} the actual encoder position immediately after both pull motors release tension.
+\paragraph{Loaded (stretched) state:} the actual encoder position while the approximately 0.3 kgf force is applied in that direction.
+
+For each of these states, multiple samples are collected over the repeated motion cycles. The samples are averaged to obtain stable estimates of:
+
+\begin{itemize}
+    \item $p_{\mathrm{cw,unloaded}}$
+    \item $p_{\mathrm{ccw,unloaded}}$
+    \item $p_{\mathrm{cw,loaded}}$
+    \item $p_{\mathrm{ccw,loaded}}$
+\end{itemize}
+
+The total positional deviation between the two pull directions is then computed separately for the unloaded and loaded conditions:
+
+
+\begin{align}
+    d_{\mathrm{unloaded}} &= \bigl| p_{\mathrm{cw,unloaded}} - p_{\mathrm{ccw,unloaded}} \bigr| \\
+    d_{\mathrm{loaded}} &= \bigl| p_{\mathrm{cw,loaded}} - p_{\mathrm{ccw,loaded}} \bigr|
+\end{align}
+
+These two values represent the measured backlash in the absence of external force and under the applied counter-torque, respectively.
+Since the motion sequence is repeated multiple times, a sufficient number of samples is collected to compute the average backlash and its dispersion for each configuration (single motor, dual motor, dual motor with preload).
+
+
+\subsection{Single servo configuration}
+
+The motor was mounted rigidly, driven to a fixed target position (2047), and subjected to the standard force-application sequence described earlier.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{media_stand/test_results_single_servo.png}
+    \caption{Test results of single STS3215 with default settings.}
+    \label{fig:test_results_single_servo}
+\end{figure}
+
+Analysis script output:
+\begin{lstlisting}[language=bash, numbers=none]
+...
+
+Total averages across all segments:
+  M3 stretched: M5_avg=2040.00
+  M3 relaxed: M5_avg=2043.97
+  M4 stretched: M5_avg=2054.78
+  M4 relaxed: M5_avg=2051.00
+
+Position deviation:
+  Stretched (M3 vs M4): M5_dev=14.78
+  Relaxed (M3 vs M4): M5_dev=7.03
+Done.
+\end{lstlisting}
+
+These correspond to:
+\begin{itemize}
+    \item Loaded backlash: $\approx \SI{1.30}{\degree}$ or $\approx \SI{2.27}{\milli\meter}$ at \SI{100}{\milli\meter} radius,
+    \item Unloaded backlash: $\approx \SI{0.62}{\degree}$ or $\approx \SI{1.08}{\milli\meter}$ at \SI{100}{\milli\meter} radius.
+\end{itemize}
+
+These results confirm that a single STS3215 exhibits on the order of 1-2 mm of effective backlash at a 100 mm lever radius, increasing under load, which motivates the use of dual-servo configurations and backlash compensation strategies described in the following sections.
+
+\FloatBarrier
+
+\subsection{Coupled STS3215 servos with default settings}
+
+To evaluate the effect of mechanically coupling two STS3215 servos, the motors were first tested in a rigid back-to-back configuration without applying any positional offset or deliberate pretension. Both actuators were commanded to the same target position and driven synchronously, sharing a common output through the fixed bracket assembly. The goal of this stage was to quantify how much backlash reduction can be achieved purely through passive coupling.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{media_stand/test_results_coupled_default.png}
+    \caption{Test results of two coupled STS3215 motors with default settings. Pull motors relaxed and stretched regions are outlined for reference.}
+    \label{fig:test_results_coupled_default}
+\end{figure}
+
+Analysis script output:
+
+\begin{lstlisting}[language=bash, numbers=none]
+...
+
+Total averages across all segments:
+  M3 stretched: M1_avg=2043.17, M2_avg=2050.00
+  M3 relaxed: M1_avg=2043.60, M2_avg=2048.83
+  M4 stretched: M1_avg=2050.17, M2_avg=2042.33
+  M4 relaxed: M1_avg=2048.93, M2_avg=2043.59
+
+Position deviation:
+  Stretched (M3 vs M4): M1_dev=7.00, M2_dev=7.67
+  Relaxed (M3 vs M4): M1_dev=5.33, M2_dev=5.25
+\end{lstlisting}
+
+With two STS3215 servos rigidly coupled and commanded to the same target position, the effective backlash is reduced compared to a single actuator. From the averaged data, the total position deviation between CW and CCW loading is:
+
+\paragraph{Loaded ($\sim 3\,\text{kg$\cdot$cm}$)}
+
+\begin{itemize}
+    \item Servo 1: $7.00$ counts $\approx 0.62^\circ \approx 1.07\,\text{mm}$ at 100\,mm radius
+    \item Servo 2: $7.67$ counts $\approx 0.67^\circ \approx 1.17\,\text{mm}$ at 100\,mm radius
+\end{itemize}
+
+\paragraph{Unloaded}
+
+\begin{itemize}
+    \item Servo 1: $5.33$ counts $\approx 0.47^\circ \approx 0.82\,\text{mm}$ at 100\,mm radius
+    \item Servo 2: $5.25$ counts $\approx 0.46^\circ \approx 0.80\,\text{mm}$ at 100\,mm radius
+\end{itemize}
+
+\FloatBarrier
+
+\subsection{Results Summary}
+
+To enable direct comparison among all test configurations, backlash values for both loaded (L) and unloaded (U) conditions were compiled into a single results table. For dual-motor setups, the larger (worst-case) deviation between the two servos is used to represent system backlash.
+
+\begin{table}[ht]
+    \centering
+    \caption{Combined backlash test results. U: unloaded (measured immediately after both pulling motors relax). L: loaded (measured while the \SI{0.3}{\kilo\gram force} counter-force is applied). Backlash is expressed in encoder counts, angular displacement, and linear displacement at a \SI{100}{\milli\meter} radius. For two-motor setups, the larger of the two measured deviations is reported.}
+    \label{tab:backlash}
+    \begin{tabular}{lccc}
+        \toprule
+        Configuration & Backlash (counts) & Backlash (deg) & Backlash (mm) \\
+        \midrule
+        Single STS3215 motor (U) & 7.03 & 0.62 & 1.07 \\
+        Single STS3215 motor (L) & 14.78 & 1.30 & 2.26 \\
+        Two coupled STS3215 (U) & 5.33 & 0.47 & 0.82 \\
+        Two coupled STS3215 (L) & 7.67 & 0.67 & 1.17 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\FloatBarrier
+
+These comparisons were only possible because the test stand applies repeatable loading in both directions and logs high-resolution encoder data, allowing small positional deviations to be measured reliably.
+
+The analysis results were instrumental in guiding our design decisions. By directly comparing backlash performance across servo types and configurations, we were able to determine which approach offered the most stable and predictable behavior for our intended application. Ultimately, the measured data supported selecting a specific servo configuration for use in our upcoming product.
+
 
 %==============================================================================
 \section*{Declaration of Competing Interests}
