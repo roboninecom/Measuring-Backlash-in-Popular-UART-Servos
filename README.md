@@ -1,8 +1,8 @@
-# Backlash Compensation in STS3215 Servo Actuators
+# A Low-Cost Platform for Measuring Backlash in Popular UART Servos
 
-This repository contains the source code, data analysis scripts, and LaTeX source for the research paper **"Backlash Compensation in STS3215 Servo Actuators"**.
+This repository contains the source code, data analysis scripts, and LaTeX source for the research paper **"A Low-Cost Platform for Measuring Backlash in Popular UART Servos"**.
 
-The project demonstrates a practical method to eliminate mechanical backlash in low-cost Feetech STS3215 servos using a dual-motor configuration with controlled pretension.
+The project presents an open-source test stand for characterizing backlash in low-cost UART servo actuators (Feetech, Waveshare, etc.) using controlled force application and telemetry logging.
 
 ---
 
@@ -30,14 +30,14 @@ The project demonstrates a practical method to eliminate mechanical backlash in 
 
 ## 🛠 Hardware Requirements
 
-![Test Stand Setup](paper/media/fig3_teststand.png)
+![Test Stand Setup](paper/media_stand/teststand_combined.png)
 *Figure: Mechanical test stand used for backlash measurements.*
 
 To reproduce the experiments, you will need:
-*   **Servos:** 2x Feetech STS3215 (configured in dual-mode) + additional servos for load testing.
-*   **Controller:** USB-TTL Adapter (e.g., Feetech URT-1) connected to a PC.
-*   **Power Supply:** 12V DC power supply capable of at least 3A.
-*   **Mechanical Assembly:** Dual-servo bracket (see paper for details).
+*   **Servos:** 2x Feetech STS3215 (puller motors) + 1-2 servos for device under test.
+*   **Controller:** USB-TTL Adapter (e.g., Feetech or Waveshare USB-TTL) connected to a PC.
+*   **Power Supply:** 7.4V or 12V DC power supply (2A minimum).
+*   **Mechanical Assembly:** 3D-printed servo holders and 100mm test levers (see paper for details).
 
 ## 🚀 Getting Started
 
@@ -45,7 +45,7 @@ To reproduce the experiments, you will need:
 
 The Node.js application manages the servos, executes motion profiles, and logs telemetry.
 
-**Prerequisites:** Node.js (v14+), NPM.
+**Prerequisites:** Node.js (v18+), NPM.
 
 ```bash
 cd software/backlash_test
@@ -72,7 +72,7 @@ node app.js
 
 ### 2. Motor analysis utilities
 
-**Prerequisites:** Python 3.8+, pandas, matplotlib, numpy.
+**Prerequisites:** Python 3.8+, numpy, pandas, plotly.
 
 `log_calc.py` handles motor-analysis scenario by reading a JSON configuration that describes which motors define the analysis phase window, which motors should be reported, and the stretched/relaxed targets for the actuated motors. 
 
@@ -97,7 +97,7 @@ You can compile it using any standard LaTeX distribution (TeX Live, MiKTeX) or o
 
 **Boris Kotov**
 *   Senior Software Engineer, Robotics Control Systems.
-*   Email: [hello@robonine.com](mailto:hello@robonine.com)
+*   Email: [boris.k@robonine.com](mailto:boris.k@robonine.com)
 
 **Company: Robonine**
 *   Developing accessible robotic solutions for education and research.
@@ -105,5 +105,8 @@ You can compile it using any standard LaTeX distribution (TeX Live, MiKTeX) or o
 
 ## 📜 License
 
-This project and the associated paper are distributed under the **Creative Commons Attribution 4.0 International License (CC BY 4.0)**.
+*   **Hardware:** CERN Open Hardware Licence Version 2 – Permissive (CERN-OHL-P-2.0)
+*   **Software:** MIT License
+*   **Documentation:** CC BY 4.0
+
 You are free to share and adapt the material as long as appropriate credit is given.
