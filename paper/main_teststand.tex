@@ -1,6 +1,8 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[11pt,letterpaper]{article}
 
-\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+
+\usepackage[margin=1.5cm]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb}
 \usepackage{siunitx}
@@ -66,6 +68,7 @@ We demonstrate how the platform can characterize single-servo and coupled-servo 
 
 \noindent\textbf{Keywords:} open-source hardware; backlash measurement; servo actuators; test stand; gear characterization; robotics; low-cost instrumentation; non-contact measurement
 
+\newpage
 %==============================================================================
 \section*{Specifications Table}
 %==============================================================================
@@ -401,66 +404,7 @@ A dedicated visualization script converts processed data into clear, publication
 
 These visualizations make it easier to interpret servo behavior, observe how different configurations influence performance, and communicate results effectively.
 
-\subsection{Geometric and Force Relationships}
-\label{subsec:geometry}
-
-For this stand, it is useful to relate three quantities:
-\begin{itemize}
-    \item Angular motion at the servo shaft,
-    \item Linear displacement at the lever tip,
-    \item Torque applied by a known force at the lever tip.
-\end{itemize}
-
-\subsubsection{Lever tip displacement and angular backlash}
-\label{subsubsec:lever-backlash}
-
-For a lever of length $r$ and a small angular change $\Delta\theta$, the linear displacement $\Delta s$ at the tip is approximately
-\begin{equation*}
-    \Delta s \approx r \,\Delta\theta,
-\end{equation*}
-where $r$ is in metres and $\Delta\theta$ is in radians.
-
-Using degrees is often more practical. With
-\begin{equation*}
-    \Delta\theta_{\text{rad}} = \Delta\theta_{\text{deg}} \cdot \frac{\pi}{180},
-\end{equation*}
-we obtain
-\begin{equation*}
-    \Delta s = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{deg}}.
-\end{equation*}
-
-A typical UART hobby servo uses a 12-bit output encoder with a resolution of 4096 counts per revolution for the class of UART servos considered in this work \cite{feetech_specification,waveshare_manual}. This corresponds to an angular step size of
-\begin{equation*}
-    \Delta\theta_{\text{enc}} = \frac{360^\circ}{4096} \approx 0.088^\circ \text{ per count}.
-\end{equation*}
-For the 100\,mm lever used in our test stand ($r = 0.1\,\text{m}$), this angular increment translates to a linear displacement at the lever tip of
-\begin{equation*}
-    \Delta s_{\text{enc}} = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{enc}} \approx 0.153\,\text{mm per count}.
-\end{equation*}
-These values define the smallest position change that can be observed directly from the servo’s reported encoder position and therefore set a practical lower bound on the backlash that can be reliably resolved with this measurement method.
-
-This provides a simple way to interpret encoder-based backlash (in degrees or encoder steps) as physical motion at the end of the lever, and forms the basis for translating the results in Section~\ref{sec:validation}.
-
-\subsubsection{Force at the lever tip and torque at the shaft}
-\label{subsubsec:force-torque}
-
-The torque $\tau$ at the servo shaft is the product of the force $F$ at the lever tip and the lever arm length $r$:
-\begin{equation*}
-    \tau = F \cdot r.
-\end{equation*}
-
-If the force is measured with a small scale in kilogram-force (kgf) and the lever length is expressed in centimetres, the torque in kg$\cdot$cm is
-\begin{equation*}
-    \tau_{\text{kg$\cdot$cm}} \approx F_{\text{kgf}} \cdot r_{\text{cm}}.
-\end{equation*}
-
-As an example, for a 100\,mm (10\,cm) lever and a measured pull of 0.15\,kg at the tip:
-\begin{equation*}
-    \tau_{\text{kg$\cdot$cm}} \approx 0.15 \times 10 = 1.5\,\text{kg$\cdot$cm}.
-\end{equation*}
-
-In SI units this is approximately $0.147\,\text{N$\cdot$m}$. This relationship makes it straightforward to calibrate different load levels by adjusting either the lever length, the band tension, or both.
-
+\newpage
 %==============================================================================
 \section{Design Files Summary}
 \label{sec:design-files}
@@ -512,6 +456,7 @@ README.md & Project documentation & MIT & / \\
 
 The main mechanical, control, and analysis files used in this work are summarized in Table~\ref{tab:designfiles}.
 
+\newpage
 %==============================================================================
 \section{Bill of Materials}
 \label{sec:bom}
@@ -626,7 +571,9 @@ Most UART servos used in this stand (e.g., Feetech, Waveshare) are supplied with
     \item Daisy-chain cables for linking multiple servos on the shared UART bus
 \end{itemize}
 
-In addition, the stand uses several 3D-printed parts, including servo holders, 100 mm levers, and optional base-plate fixtures (see Section~\ref{sec:design-files}). STL files for all printed components are provided. Parts can be printed on a standard FDM printer using common materials such as PLA or PETG; moderate infill (e.g., 30–40\%) is sufficient for typical loads.
+In addition, the stand uses several 3D-printed parts, including servo holders, 100 mm levers, and optional base-plate fixtures (see Section~\ref{sec:design-files}). The primary printed components are:
+servo\_holder\_single.stl and servo\_holder\_dual.stl for mounting the servos, test\_lever\_100mm\_single.stl and test\_lever\_100mm\_dual.stl for the lever arms, and the optional mounting plate and shaft coupler bracket listed in Table~\ref{tab:designfiles}.
+STL files for all printed components are provided. Parts can be printed on a standard FDM printer using common materials such as PLA or PETG; moderate infill (e.g., 30–40\%) is sufficient for typical loads.
 
 The test stand is designed so that all major assembly steps—mounting servos in holders, attaching levers, and wiring—use only the screws and cables provided with the servos. No special fasteners are required except for those used to attach holders to the base plate and to secure elastic bands at the lever tips.
 
@@ -653,9 +600,9 @@ Repeat this process for each servo (puller servos and tested servo(s)) to ensure
 Before securing the servos, attach the 25T output disks (horns) to each puller servo.
 
 \begin{enumerate}
-    \item Place both puller servos into their 3D-printed holders.
+    \item Place both puller servos into their 3D-printed single servo holders (\texttt{servo\_holder\_single.stl}, see Table~\ref{tab:designfiles}).
     \item Secure each servo using the thread-cutting screws supplied with the servos.
-    \item Attach a 100 mm lever to each puller motor using the M3×5 screws that come with the servos. Ensure each lever is firmly seated on the 25T horn.
+    \item Attach a 100 mm lever (\texttt{test\_lever\_100mm\_single.stl}) to each puller motor using the M3×5 screws that come with the servos. Ensure each lever is firmly seated on the 25T horn.
 \end{enumerate}
 
 \subsection{Install the Tested Servo(s)}
@@ -666,9 +613,9 @@ The stand supports either a single tested servo or two coupled servos.
 Before placing the servos into the holders, attach the 25T output disks (horns) to each tested servo.
 
 \begin{enumerate}
-    \item Place the tested servo(s) into the appropriate single or dual holder.
+    \item For a single-servo configuration, place the tested servo into the single holder (\texttt{servo\_holder\_single.stl}, Table~\ref{tab:designfiles}). For a dual-servo configuration, place both servos into the dual holder (\texttt{servo\_holder\_dual.stl}, Table~\ref{tab:designfiles}).
     \item Secure the servo(s) using the provided thread-cutting screws.
-    \item Attach the 100 mm lever (single or coupled version) to the output shaft(s).
+    \item Attach the appropriate 100 mm lever: \texttt{test\_lever\_100mm\_single.stl} for a single servo, or \texttt{test\_lever\_100mm\_dual.stl} for two servos.
     \item Tighten the lever screws using the M3×5 servo-supplied screws.
 \end{enumerate}
 
@@ -689,7 +636,7 @@ Verify that the lever is roughly vertical—this is the neutral (home) position.
     \item Hook elastic bands between the puller-motor levers and the tested-motor lever.
     \item Secure each band using washers and M3×8 screws.
 \end{enumerate}
-
+ 
 \subsection{Mount the Puller Servos on the Base Plate}
 \label{subsec:mount-puller}
 
@@ -982,6 +929,66 @@ The total positional deviation between the two pull directions is then computed 
 These two values represent the measured backlash in the absence of external force and under the applied counter-torque, respectively.
 Since the motion sequence is repeated multiple times, a sufficient number of samples is collected to compute the average backlash and its dispersion for each configuration (single motor, dual motor, dual motor with preload).
 
+\subsection{Geometric and Force Relationships}
+\label{subsec:geometry}
+
+For this stand, it is useful to relate three quantities:
+\begin{itemize}
+    \item Angular motion at the servo shaft,
+    \item Linear displacement at the lever tip,
+    \item Torque applied by a known force at the lever tip.
+\end{itemize}
+
+\subsubsection{Lever tip displacement and angular backlash}
+\label{subsubsec:lever-backlash}
+
+For a lever of length $r$ and a small angular change $\Delta\theta$, the linear displacement $\Delta s$ at the tip is approximately
+\begin{equation*}
+    \Delta s \approx r \,\Delta\theta,
+\end{equation*}
+where $r$ is in metres and $\Delta\theta$ is in radians.
+
+Using degrees is often more practical. With
+\begin{equation*}
+    \Delta\theta_{\text{rad}} = \Delta\theta_{\text{deg}} \cdot \frac{\pi}{180},
+\end{equation*}
+we obtain
+\begin{equation*}
+    \Delta s = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{deg}}.
+\end{equation*}
+
+A typical UART hobby servo uses a 12-bit output encoder with a resolution of 4096 counts per revolution for the class of UART servos considered in this work \cite{feetech_specification,waveshare_manual}. This corresponds to an angular step size of
+\begin{equation*}
+    \Delta\theta_{\text{enc}} = \frac{360^\circ}{4096} \approx 0.088^\circ \text{ per count}.
+\end{equation*}
+For the 100\,mm lever used in our test stand ($r = 0.1\,\text{m}$), this angular increment translates to a linear displacement at the lever tip of
+\begin{equation*}
+    \Delta s_{\text{enc}} = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{enc}} \approx 0.153\,\text{mm per count}.
+\end{equation*}
+These values define the smallest position change that can be observed directly from the servo’s reported encoder position and therefore set a practical lower bound on the backlash that can be reliably resolved with this measurement method.
+
+This provides a simple way to interpret encoder-based backlash (in degrees or encoder steps) as physical motion at the end of the lever, and forms the basis for translating the results in Section~\ref{sec:validation}.
+
+\subsubsection{Force at the lever tip and torque at the shaft}
+\label{subsubsec:force-torque}
+
+The torque $\tau$ at the servo shaft is the product of the force $F$ at the lever tip and the lever arm length $r$:
+\begin{equation*}
+    \tau = F \cdot r.
+\end{equation*}
+
+If the force is measured with a small scale in kilogram-force (kgf) and the lever length is expressed in centimetres, the torque in kg$\cdot$cm is
+\begin{equation*}
+    \tau_{\text{kg$\cdot$cm}} \approx F_{\text{kgf}} \cdot r_{\text{cm}}.
+\end{equation*}
+
+As an example, for a 100\,mm (10\,cm) lever and a measured pull of 0.15\,kg at the tip:
+\begin{equation*}
+    \tau_{\text{kg$\cdot$cm}} \approx 0.15 \times 10 = 1.5\,\text{kg$\cdot$cm}.
+\end{equation*}
+
+In SI units this is approximately $0.147\,\text{N$\cdot$m}$. This relationship makes it straightforward to calibrate different load levels by adjusting either the lever length, the band tension, or both.
+
 \subsection{Single STS3215 Servo Configuration}
 \label{subsec:sts3215-single}
 
@@ -1160,7 +1167,16 @@ The author thanks the open-source hardware community for inspiration and the Fee
 This work did not involve human subjects or animals.
 
 %==============================================================================
-\nocite{*}
+\section*{Declaration of generative AI and AI-assisted technologies 
+in the manuscript preparation process}
+%==============================================================================
+
+During the preparation of this work, the author used OpenAI ChatGPT in order to
+assist with text structuring, language improvement, and refinement of technical
+descriptions. After using this tool, the author reviewed, verified, and edited
+all generated content and takes full responsibility for the content of the
+published article.
+
 \bibliographystyle{ieeetr}
 \bibliography{references}
 
