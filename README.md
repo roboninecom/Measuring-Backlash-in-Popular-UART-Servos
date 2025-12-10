@@ -1,6 +1,6 @@
 # A Low-Cost Platform for Measuring Backlash in Popular UART Servos
 
-This repository contains the source code, data analysis scripts, and LaTeX source for the research paper **"A Low-Cost Platform for Measuring Backlash in Popular UART Servos"**.
+This repository contains the source code and data analysis scripts for the research paper **"A Low-Cost Platform for Measuring Backlash in Popular UART Servos"**.
 
 The project presents an open-source test stand for characterizing backlash in low-cost UART servo actuators (Feetech, Waveshare, etc.) using controlled force application and telemetry logging.
 
