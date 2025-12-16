@@ -1,0 +1,36 @@
+# Licenses
+
+This project uses multiple licenses for different components:
+
+## Hardware (CAD files, designs)
+**CERN Open Hardware Licence Version 2 - Permissive (CERN-OHL-P-2.0)**
+
+See [LICENSE-HARDWARE](LICENSE-HARDWARE) for the full license text.
+
+Applies to:
+- All files in `/cad/` directory
+- Hardware design documentation
+
+## Software
+**MIT License**
+
+See [LICENSE-SOFTWARE](LICENSE-SOFTWARE) for the full license text.
+
+Applies to:
+- All files in `/software/` directory
+- Test controller application
+- Analysis scripts
+
+## Documentation
+**Creative Commons Attribution 4.0 International (CC BY 4.0)**
+
+See [LICENSE-DOCS](LICENSE-DOCS) for the full license text.
+
+Applies to:
+- All files in `/paper/` directory
+- README and other documentation files
+
+---
+
+For questions about licensing, please contact the author.
+
