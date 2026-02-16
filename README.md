@@ -105,8 +105,8 @@ You can compile it using any standard LaTeX distribution (TeX Live, MiKTeX) or o
 
 ## 📜 License
 
-*   **Hardware:** CERN Open Hardware Licence Version 2 – Permissive (CERN-OHL-P-2.0)
-*   **Software:** MIT License
+*   **Hardware:** CC BY 4.0
+*   **Software:** GNU GPLv3.0
 *   **Documentation:** CC BY 4.0
 
 You are free to share and adapt the material as long as appropriate credit is given.
