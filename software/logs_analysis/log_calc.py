@@ -29,14 +29,49 @@ def summarize_measurements(seg_slice: pd.DataFrame, report_motor_ids: List[int])
     return ", ".join(summaries)
 
 
+def summarize_errors(seg_slice: pd.DataFrame, motor_ids: List[int]) -> str:
+    """Compute MAE and RMSE of tracking error (pos - target) for motors that have target columns."""
+    parts = []
+    for motor_id in motor_ids:
+        p_col = pos_col(motor_id)
+        t_col = target_col(motor_id)
+        if t_col not in seg_slice.columns or p_col not in seg_slice.columns:
+            continue
+        err = seg_slice[p_col] - seg_slice[t_col]
+        mae = err.abs().mean()
+        rmse = float(np.sqrt((err * err).mean()))
+        parts.append(f"M{motor_id}_mae={mae:.2f}, M{motor_id}_rmse={rmse:.2f}")
+    return ", ".join(parts) if parts else "(no target columns)"
+
+
+def average_errors(slices: List[pd.DataFrame], motor_ids: List[int]) -> Optional[Dict[int, Dict[str, float]]]:
+    """Aggregate MAE and RMSE across concatenated slices for motors that have target columns."""
+    if not slices:
+        return None
+    concat = pd.concat(slices)
+    out: Dict[int, Dict[str, float]] = {}
+    for motor_id in motor_ids:
+        p_col = pos_col(motor_id)
+        t_col = target_col(motor_id)
+        if t_col not in concat.columns or p_col not in concat.columns:
+            continue
+        err = concat[p_col] - concat[t_col]
+        out[motor_id] = {
+            "mae": float(err.abs().mean()),
+            "rmse": float(np.sqrt((err * err).mean())),
+        }
+    return out if out else None
+
+
 def print_subsegment(label: str, seg_slice: pd.DataFrame, report_motor_ids: List[int]) -> None:
     t_start = seg_slice["t_sec"].iloc[0]
     t_end = seg_slice["t_sec"].iloc[-1]
     n_samples = len(seg_slice)
     measurements = summarize_measurements(seg_slice, report_motor_ids)
+    errors = summarize_errors(seg_slice, report_motor_ids)
     print(
         f"    - {label}: samples={n_samples}, "
-        f"t_sec=[{t_start:.3f}, {t_end:.3f}], {measurements}"
+        f"t_sec=[{t_start:.3f}, {t_end:.3f}], {measurements}; {errors}"
     )
 
 
@@ -54,6 +89,7 @@ def analyze_log(df: pd.DataFrame, config: AnalysisConfig) -> None:
         required_columns.add(pos_col(motor_id))
     for motor_id in config.report_motor_ids:
         required_columns.add(pos_col(motor_id))
+        required_columns.add(target_col(motor_id))
     for motor in config.actuated_motors:
         required_columns.add(target_col(motor.motor_id))
         required_columns.add(pos_col(motor.motor_id))
@@ -137,6 +173,22 @@ def analyze_log(df: pd.DataFrame, config: AnalysisConfig) -> None:
                 print(f"  {label}: no samples")
             else:
                 metrics = ", ".join(f"M{mid}_avg={avg:.2f}" for mid, avg in avg_map.items())
+                print(f"  {label}: {metrics}")
+
+    print("\nTotal tracking error across all segments (MAE/RMSE in encoder counts):")
+    err_cache: Dict[tuple, Optional[Dict[int, Dict[str, float]]]] = {}
+    for motor in config.actuated_motors:
+        for state in ("stretched", "relaxed"):
+            groups = global_groups[motor.label][state]
+            err_map = average_errors(groups, config.report_motor_ids)
+            err_cache[(motor.label, state)] = err_map
+            label = f"{motor.label} {state}"
+            if err_map is None:
+                print(f"  {label}: no samples")
+            else:
+                metrics = ", ".join(
+                    f"M{mid}_mae={m['mae']:.2f}, M{mid}_rmse={m['rmse']:.2f}" for mid, m in err_map.items()
+                )
                 print(f"  {label}: {metrics}")
 
     print("\nPosition deviation:")
