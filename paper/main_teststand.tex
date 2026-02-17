@@ -98,7 +98,7 @@ We demonstrate how the platform can characterize single-servo and coupled-servo 
 \midrule
 \textbf{Open source license} & 
 \begin{minipage}[t]{10cm}
-CC-BY-4.0 (hardware and paper)
+CC-BY-4.0 (hardware and paper) \\
 GNU GPL-3.0 (software)
 \end{minipage} \\
 \midrule
@@ -295,22 +295,20 @@ M3--M4 & Feetech STS3215 servo (dual-servo DUT option) & 2 & 18.00 & AliExpress\
 \midrule
 
 \multicolumn{6}{l}{\textit{3D-printed fixtures}} \\
-P1--P2 & Servo holder bracket (single) & 2 & 2.00 & Self-printed & Polymer \\
-P3--P4 & Test lever, 100\,mm (single) & 2 & 0.50 & Self-printed & Polymer \\
-P5    & Servo holder bracket (single DUT option) & 1 & 2.00 & Self-printed & Polymer \\
-P6    & Test lever, 100\,mm (single DUT option) & 1 & 0.50 & Self-printed & Polymer \\
-P7    & Servo holder bracket (dual DUT option) & 1 & 2.00 & Self-printed & Polymer \\
-P8    & Shaft coupler bracket (dual DUT option) & 1 & 1.50 & Self-printed & Polymer \\
-P9    & Mounting plate (dual DUT option) & 1 & 1.50 & Self-printed & Polymer \\
-P10   & Test lever, 100\,mm (dual DUT option) & 1 & 0.50 & Self-printed & Polymer \\
+P1--P2 & \texttt{servo\_holder\_single.stl}  & 2 & 2.00 & Self-printed & Polymer \\
+P3--P4 & \texttt{test\_lever\_100mm\_single.stl} & 2 & 2.00 & Self-printed & Polymer \\
+P5     & \texttt{servo\_holder\_single.stl} (single DUT option) & 1 & 2.00 & Self-printed & Polymer \\
+P6     & \texttt{test\_lever\_100mm\_single.stl} (single DUT option) & 1 & 2.00 & Self-printed & Polymer \\
+P7     & \texttt{servo\_holder\_dual.stl} (dual DUT option),  & 1 & 3.00 & Self-printed & Polymer \\
+P8     & \texttt{test\_lever\_100mm\_dual.stl} (dual DUT option) & 1 & 3.00 & Self-printed & Polymer \\
 \midrule
 
 \multicolumn{6}{l}{\textit{Elastic loading}} \\
-E1--E2 & Elastic bands, rubber, $\sim$100\,mm & 2 & 0.50 & General office supply\footnotemark[2] & Polymer \\
+E1--E2 & Elastic bands, rubber, $\sim$100\,mm & 2 & 0.50 & Office supply\footnotemark[2] & Polymer \\
 \midrule
 
 \multicolumn{6}{l}{\textit{Electronics and wiring}} \\
-U1 & USB--TTL adapter (FT232RL/CH340 compatible, 3.3\,V TTL) & 1 & 5.00 & AliExpress\footnotemark[3] & Semiconductor \\
+U1 & USB--TTL adapter, e.g. Feetech FE-URT-1 & 1 & 5.00 & AliExpress\footnotemark[3] & Semiconductor \\
 PS1 & 12\,V DC power supply, $\ge$2\,A, barrel connector & 1 & 8.00 & Amazon\footnotemark[4] & Other \\
 \midrule
 
@@ -339,9 +337,9 @@ F12--F19 & M4 hex nut, stainless steel & 8 & 0.05 & Hardware store\footnotemark[
 \vspace{1em}
 \noindent\textbf{Cost summary (USD):}
 \begin{itemize}
-    \item Base system (pullers + fixtures + electronics): \textbf{\$55.00}
-    \item With single-servo DUT option: \textbf{\$75.50}
-    \item With dual-servo DUT option: \textbf{\$98.16}
+    \item Base system (pullers + fixtures + electronics): \textbf{\$58.00}
+    \item With single-servo DUT option: \textbf{\$80.00}
+    \item With dual-servo DUT option: \textbf{\$101.66}
 \end{itemize}
 
 \newpage
@@ -380,7 +378,7 @@ Using elastic bands as the coupling element prevents additional mechanical backl
 
 The test stand is designed so that all major assembly steps—mounting servos in holders, attaching levers, and wiring—use only the screws and cables provided with the servos. No special fasteners are required except for those used to attach holders to the base plate and to secure elastic bands at the lever tips.
 
-Basic assembly requires only standard hand tools, such as a small Phillips screwdriver, hex keys for M3 hardware, and optionally clamps for fixing holders to the base plate. A small digital scale is recommended for calibrating the elastic-band force but is not needed for basic mechanical assembly.
+Basic assembly requires only standard hand tools, such as a small Phillips screwdriver, hex keys for M3 hardware, and optionally clamps for fixing holders to the base plate. A hanging scale is recommended for calibrating the elastic-band force but is not needed for basic mechanical assembly.
 
 \subsubsection{Motor Fixtures}
 \label{subsubsec:motor-fixtures}
@@ -399,9 +397,9 @@ Before further assembly, 25T output disks (horns) must be attached to each pulle
 \subsubsection{3D Printed Parts}
 \label{subsubsec:printed-parts}
 
-The stand uses several 3D-printed parts, including servo holders and 100\,mm levers (see the design files in Table~\ref{tab:designfiles}). For assembly, these correspond to holders P1--P2 and levers P3--P4 (pullers), and holders/levers P5--P6 (single-servo DUT) or P7--P10 (dual-servo DUT), as listed in Table~\ref{tab:bom_summary}.
+The stand uses several 3D-printed parts, including servo holders and 100\,mm levers (see the design files in Table~\ref{tab:designfiles}). For assembly, these correspond to holders P1--P2 and levers P3--P4 (pullers), and holder/lever P5--P6 (single-servo DUT) or P7--P8 (dual-servo DUT), as listed in Table~\ref{tab:bom_summary}. Note that the puller levers (P3--P4) and the single-DUT lever (P6) are the same printed part (\texttt{test\_lever\_100mm\_single.stl}); likewise P1--P2 and P5 all use \texttt{servo\_holder\_single.stl}.
 
-Parts can be printed on a standard FDM printer using common materials such as PLA or PETG; moderate infill (e.g., 30–40\%) is sufficient for typical loads.
+Parts can be printed on a standard FDM printer using common materials such as PLA or PETG; moderate infill (e.g., 30--40\%) is sufficient for typical loads.
 
 Material choice (PLA vs.\ PETG) does not affect the measurement principle because load is applied via elastic bands and
 backlash is computed from the DUT encoder shift; printed parts serve only as fixtures requiring geometric repeatability and sufficient stiffness at the tested loads.
@@ -411,10 +409,10 @@ backlash is computed from the DUT encoder shift; printed parts serve only as fix
 
 The base plate serves as the foundation of the stand. It is a flat, rigid surface without any predefined mounting patterns. Components are attached using clamps or fasteners, depending on the material and the required rigidity. This approach keeps the design flexible and allows users to adapt the layout to different test configurations. Materials such as acrylic, plywood, aluminum, or 3D-printed panels can all be used successfully.
 
-\subsubsection{Hanging Scales}
+\subsubsection{Hanging Scale}
 \label{subsubsec:hanging-scale}
 
-Any small scales with a hook (e.g., a spring scales or a compact digital hanging scales) can be used to calibrate the tensile force applied to the DUT lever by the elastic bands. During calibration, the hook is attached to the elastic band at the same point where it connects to the lever, and the band is stretched \emph{parallel to the ground} while reading the force on the scales. The band extension (or, equivalently, the lever-to-lever distance between the puller and DUT attachment points) is then adjusted until the target force is reached. Recording this extension distance provides a simple, repeatable reference that can be reproduced when positioning the puller mounts, reducing setup-to-setup variability after disassembly and reassembly.
+Any small scale with a hook (e.g., a spring scale or a compact digital hanging scale) can be used to calibrate the tensile force applied to the DUT lever by the elastic bands. During calibration, the hook is attached to the elastic band at the same point where it connects to the lever, and the band is stretched \emph{parallel to the ground} while reading the force on the scale. The band extension (or, equivalently, the lever-to-lever distance between the puller and DUT attachment points) is then adjusted until the target force is reached. Recording this extension distance provides a simple, repeatable reference that can be reproduced when positioning the puller mounts, reducing setup-to-setup variability after disassembly and reassembly.
 
 \subsubsection{Servo ID Assignment}
 \label{subsubsec:servo-id}
@@ -424,9 +422,9 @@ Each servo must be assigned a unique ID before installation. This is done using 
 \begin{enumerate}
     \item Connect a single servo to the USB–TTL UART board using one of its UART ports.
     \item Connect the power supply to the UART board, then connect the board to the PC via USB.
-    \item Open FD 1.9.8.3, select the correct COM port and baud rate (typically 1,000,000 bps for Feetech/Waveshare UART servos).
-    \item Click Scan to detect the connected servo.
-    \item Open the Programming tab, assign a new servo ID (register 5), and save the settings.
+    \item Open FD 1.9.8.3, select the correct COM port and baud rate (typically 1{,}000{,}000 bps for Feetech/Waveshare UART servos) and click \textbf{Connect}.
+    \item Click \textbf{Scan} to detect the connected servo.
+    \item Open the Programming tab, assign a new servo ID (register 5), and \textbf{Save} the settings.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -469,7 +467,7 @@ The stand supports either a single tested servo or two coupled servos.
 \begin{enumerate}
     \item For a single-servo DUT, place the tested servo (M3) into the single-servo holder (P5). For a dual-servo DUT, place both servos (M3--M4) into the dual holder (P7).
     \item Secure the servo(s) using the provided thread-forming screws.
-    \item Attach the appropriate 100\,mm lever: P6 for a single-servo DUT, or P10 for a dual-servo DUT.
+    \item Attach the appropriate 100\,mm lever: P6 for a single-servo DUT, or P8 for a dual-servo DUT.
     \item Tighten the lever screws using the servo-supplied M3$\times$5 screws.
 \end{enumerate}
 
@@ -488,8 +486,8 @@ A dual-servo lever configuration is illustrated in Figure~\ref{fig:bracket_lever
 \label{subsubsec:attach-bands}
 
 \begin{enumerate}
-    \item Thread an M3$\times$10 screw (F1--F3) into the hole at the top of each lever to serve as an anchor point for the elastic bands (E1--E2).
-    \item Hook the elastic bands (E1--E2) onto the M3$\times$10 screw heads and connect them between the puller-motor levers (P3--P4) and the DUT lever (P6 or P10).
+    \item Use an M3$\times$10 screw (or any similar small screw/bolt available to you) as an anchor point at the lever tip.
+    \item Hook the elastic bands (E1--E2) onto the anchor and connect them between the puller-motor levers (P3--P4) and the DUT lever (P6 or P8).
 \end{enumerate}
 
 \subsubsection{Mount the Tested Servo and Puller Servos on the Base Plate}
@@ -500,7 +498,7 @@ A dual-servo lever configuration is illustrated in Figure~\ref{fig:bracket_lever
     \item Attach the holder using clamps or appropriate fasteners, depending on the base-plate material.
     \item Position the puller-servo holders on both sides of the tested servo assembly.
     \item Adjust the distance so that the elastic bands run in straight lines and remain only lightly tensioned at neutral (vertical lever position).
-    \item Secure the puller-servo holders using clamps or M4 fasteners (F4--F19).
+    \item Secure the puller-servo holders using clamps. You may also secure mounts using M4 hardware (F4--F19).
 \end{enumerate}
 
 Verify that the lever is roughly vertical---this is the neutral (home) position.
@@ -508,7 +506,7 @@ Verify that the lever is roughly vertical---this is the neutral (home) position.
 \subsubsection{Elastic-Band Load Calibration}
 \label{subsubsec:load-calibration}
 
-The elastic bands should apply enough tensile force to reliably seat the gear train on opposite flanks during clockwise and counter-clockwise loading. In our setup, approximately 0.15\,kgf in the pulled state was sufficient for the single-servo DUT configuration, while approximately 0.3\,kgf was sufficient for the dual-servo DUT configuration. The force can be checked using a small hanging scales as described in Section~\ref{subsubsec:hanging-scales} by measuring the band tension parallel to the ground and adjusting the lever-to-lever distance (band extension) accordingly. High absolute accuracy is not required; the primary requirement is that the load is sufficient and approximately symmetric in both directions. Since backlash is computed from encoder readings taken when both elastic bands return to the relaxed state, small variations in the exact force level do not significantly affect the measurement, provided the gear train is consistently preloaded during each pull.
+The elastic bands should apply enough tensile force to reliably seat the gear train on opposite flanks during clockwise and counter-clockwise loading. In our setup, approximately 0.15\,kgf in the pulled state was sufficient for the single-servo DUT configuration, while approximately 0.3\,kgf was sufficient for the dual-servo DUT configuration. The force can be checked using a small hanging scales as described in Section~\ref{subsubsec:hanging-scale} by measuring the band tension parallel to the ground and adjusting the lever-to-lever distance (band extension) accordingly. High absolute accuracy is not required; the primary requirement is that the load is sufficient and approximately symmetric in both directions. Since backlash is computed from encoder readings taken when both elastic bands return to the relaxed state, small variations in the exact force level do not significantly affect the measurement, provided the gear train is consistently preloaded during each pull.
 
 \begin{figure}[ht]
     \centering
@@ -541,10 +539,10 @@ The wiring scheme used in this work is illustrated in Figure~\ref{fig:connection
 \subsubsection{Power and Computer Connection}
 \label{subsubsec:power-connection}
 
-The stand can be powered by a standard DC supply appropriate for the selected servo models (commonly 7.4 or 12 V for Feetech units).
+The stand can be powered by a standard DC supply appropriate for the selected servo models (commonly 12 V for Feetech or Waveshare units).
 
 \begin{enumerate}
-    \item Connect the DC power supply (PS1) to the servo bus power input on the USB--TTL adapter/breakout (U1).
+    \item Connect the DC power supply (PS1) to the power input on the USB--TTL adapter/breakout (U1).
     \item Connect the USB--TTL adapter (U1) to the PC using a USB cable.
 \end{enumerate}
 
@@ -566,12 +564,12 @@ Calibration ensures that all servos start from a consistent neutral (middle) pos
 
 \begin{enumerate}
     \item Open the Feetech Utility (FD 1.9.8.3).
-    \item Select the appropriate COM port, set the baud rate (typically 1,000,000 bps), and click Connect.
-    \item Click Scan to detect all connected servos on the UART bus.
+    \item Select the appropriate COM port, set the baud rate (typically 1{,}000{,}000~bps), and click \textbf{Connect}.
+    \item Click \textbf{Scan} to detect all connected servos on the UART bus.
     \item For each servo:
     \begin{itemize}
         \item Manually rotate each servo’s lever so it is in the vertical (neutral) position.
-        \item Open the Programming tab and click Offset.
+        \item Open the Programming tab and click \textbf{Offset}.
     \end{itemize}
 \end{enumerate}
 
@@ -592,7 +590,7 @@ The software stack coordinates the full test workflow: it drives the UART servos
 \begin{figure}[ht]
     \centering
     \includegraphics[width=1\linewidth]{media_stand/software_workflow.png}
-    \caption{Suggested software worlflow.}
+    \caption{Software worlflow used in this work.}
     \label{fig:software-worlflow}
 \end{figure}
 
@@ -606,7 +604,7 @@ The test controller is a Node.js application that communicates with all servos o
     \item \textbf{Telemetry logging:} continuously collecting status data from each servo during the full test cycle.
 \end{itemize}
 
-During test sequence, each servo reports its state at regular intervals. The controller collects these packets and stores them in CSV format. Typical fields include: Timestamp, Servo ID, Target (commanded) position, Actual encoder position, Estimated load/torque, Motor current, Supply voltage
+During test sequence, each servo reports its state at regular intervals. The controller collects these packets and stores them in CSV format. Typical fields include: Timestamp, Servo ID, Target (commanded) position, Actual encoder position, Estimated load/torque, Motor current, Supply voltage.
 
 The default logging rate is approximately 10~Hz but can be increased or decreased depending on test conditions. These data form the basis for quantifying backlash, tracking positional deviations, and evaluating servo behavior under varying loads.
 
@@ -621,7 +619,7 @@ A Python script is provided for processing and interpreting the recorded telemet
     \item \textbf{Averaging and statistics:} aggregating multiple cycles to obtain stable, repeatable measurements.
 \end{itemize}
 
-The output includes numerical summaries and intermediate datasets suitable for further study or comparison across servo models and parameter settings, as used in Section~\ref{sec:results}.
+The output includes numerical summaries and intermediate datasets suitable for further study or comparison across servo models and parameter settings, as used in Section~\ref{subsec:results-summary}.
 
 \subsubsection{Visualization Tools}
 \label{subsubsec:visualization-tools}
@@ -942,7 +940,7 @@ The motor was mounted rigidly, driven to a fixed target position (2047), and sub
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=1\linewidth]{media_stand/test_results_single_servo.png}
+    \includegraphics[width=1\linewidth]{media_stand/test_results_single.jpg}
     \caption{Test results of a single STS3215 with default settings (y-axis in encoder counts).}
     \label{fig:test_results_single_servo}
 \end{figure}
@@ -996,7 +994,6 @@ To evaluate the effect of mechanically coupling two STS3215 servos, the motors w
 Analysis script output:
 \begin{lstlisting}[language=bash, numbers=none]
 ...
-
 Total averages across all segments:
   M3 stretched: M1_avg=2043.17, M2_avg=2050.00
   M3 relaxed:  M1_avg=2043.60, M2_avg=2048.83
@@ -1088,7 +1085,7 @@ To enable direct comparison among all test configurations, backlash values for b
         Single STS3215 motor (U) & 7.03  & 0.62 & 1.08 \\
         Single STS3215 motor (L) & 14.78 & 1.30 & 2.27 \\
         Two coupled STS3215 (U)  & 5.33  & 0.47 & 0.82 \\
-        Two coupled STS3215 (L)  & 7.67  & 0.67 & 1.18 \\
+        Two coupled STS3215 (L)  & 7.67  & 0.67 & 1.17 \\
         Single STS3250 motor (U) & 1.48  & 0.13 & 0.23 \\
         Single STS3250 motor (L) & 3.78  & 0.33 & 0.58 \\
         \bottomrule
@@ -1110,9 +1107,17 @@ To enable direct comparison among all test configurations, backlash values for b
     \end{tabular}
 \end{table}
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\linewidth]{media_stand/tracking_error.png}
+    \caption{Steady-state tracking error over all detected loaded/unloaded segments, reported as mean absolute error (MAE) and root mean square error (RMSE) in encoder counts for three test configurations.}
+    \label{fig:tracking_error}
+\end{figure}
+
 \FloatBarrier
 
 The consolidated results in Table~\ref{tab:backlash} show that the proposed test stand can resolve differences in backlash across actuator types and configurations under repeatable bidirectional loading. Table~\ref{tab:tracking_error} complements this by quantifying steady-state tracking error (MAE/RMSE), indicating that the measured CW/CCW offsets are not dominated by control noise. Together, these results support the objective of quantifying backlash and comparing configurations using robust, reproducible metrics.
+Figure~\ref{fig:tracking_error} visualizes the MAE and RMSE tracking error values reported in Table~\ref{tab:tracking_error} for the three tested configurations.
 
 The analysis results were instrumental in guiding our design decisions. By directly comparing backlash performance across servo types and configurations, we were able to determine which approach offered the most stable and predictable behavior for our intended application. Ultimately, the measured data supported selecting a specific servo configuration for use in our upcoming product.
 
