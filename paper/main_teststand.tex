@@ -264,7 +264,6 @@ log\_viz.py & Python script & GNU GPL-3.0& /software/logs\_analysis/ \\
 \multicolumn{4}{l}{\textit{Project Data and Documentation}} \\
 \midrule
 logs/ & Telemetry CSV output (directory) & CC-BY-4.0 & /logs/ \\
-paper/ & LaTeX source files (directory) & CC-BY-4.0 & /paper/ \\
 README.md & Project documentation & CC-BY-4.0 & / \\
 \bottomrule
 \end{tabular}
@@ -887,28 +886,28 @@ For this stand, it is useful to relate three quantities:
 \label{subsubsec:lever-backlash}
 
 For a lever of length $r$ and a small angular change $\Delta\theta$, the linear displacement $\Delta s$ at the tip is approximately
-\begin{equation*}
+\begin{equation}
     \Delta s \approx r \,\Delta\theta,
-\end{equation*}
+\end{equation}
 where $r$ is in metres and $\Delta\theta$ is in radians.
 
 Using degrees is often more practical. With
-\begin{equation*}
+\begin{equation}
     \Delta\theta_{\text{rad}} = \Delta\theta_{\text{deg}} \cdot \frac{\pi}{180},
-\end{equation*}
+\end{equation}
 we obtain
-\begin{equation*}
+\begin{equation}
     \Delta s = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{deg}}.
-\end{equation*}
+\end{equation}
 
 A typical UART hobby servo uses a 12-bit output encoder with a resolution of 4096 counts per revolution for the class of UART servos considered in this work \cite{feetech_specification,waveshare_manual}. This corresponds to an angular step size of
-\begin{equation*}
+\begin{equation}
     \Delta\theta_{\text{enc}} = \frac{360^\circ}{4096} \approx 0.088^\circ \text{ per count}.
-\end{equation*}
+\end{equation}
 For the 100\,mm lever used in our test stand ($r = 0.1\,\text{m}$), this angular increment translates to a linear displacement at the lever tip of
-\begin{equation*}
+\begin{equation}
     \Delta s_{\text{enc}} = r \cdot \frac{\pi}{180} \,\Delta\theta_{\text{enc}} \approx 0.153\,\text{mm per count}.
-\end{equation*}
+\end{equation}
 These values define the smallest position change that can be observed directly from the servo’s reported encoder position and therefore set a practical lower bound on the backlash that can be reliably resolved with this measurement method.
 
 This provides a simple way to interpret encoder-based backlash (in degrees or encoder steps) as physical motion at the end of the lever, and forms the basis for translating the results in Section~\ref{sec:validation}.
@@ -917,19 +916,19 @@ This provides a simple way to interpret encoder-based backlash (in degrees or en
 \label{subsubsec:force-torque}
 
 The torque $\tau$ at the servo shaft is the product of the force $F$ at the lever tip and the lever arm length $r$:
-\begin{equation*}
+\begin{equation}
     \tau = F \cdot r.
-\end{equation*}
+\end{equation}
 
 If the force is measured with a small scale in kilogram-force (kgf) and the lever length is expressed in centimetres, the torque in kg$\cdot$cm is
-\begin{equation*}
+\begin{equation}
     \tau_{\text{kg$\cdot$cm}} \approx F_{\text{kgf}} \cdot r_{\text{cm}}.
-\end{equation*}
+\end{equation}
 
 As an example, for a 100\,mm (10\,cm) lever and a measured pull of 0.15\,kg at the tip:
-\begin{equation*}
+\begin{equation}
     \tau_{\text{kg$\cdot$cm}} \approx 0.15 \times 10 = 1.5\,\text{kg$\cdot$cm}.
-\end{equation*}
+\end{equation}
 
 In SI units this is approximately $0.147\,\text{N$\cdot$m}$. This relationship makes it straightforward to calibrate different load levels by adjusting either the lever length, the band tension, or both.
 
