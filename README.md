@@ -11,7 +11,6 @@ The project presents an open-source test stand for characterizing backlash in lo
 ```text
 ├── cad/                         # Hardware design files (.step and .stl)
 ├── logs/                        # Output directory for telemetry data (CSV)
-├── paper/                       # LaTeX source code of the article and figures
 ├── software/
 │   ├── backlash_test/
 │   │   ├── .env                     # Environment variables
